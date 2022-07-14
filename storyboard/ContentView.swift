@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import MapKit
 import FirebaseCore
 
 extension String: Identifiable {
@@ -17,9 +16,9 @@ extension String: Identifiable {
 }
 
 struct ContentView: View {
-    @State private var mapRegion = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.5, longitude: -0.12), span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
     
-    @State private var page = 2
+    
+    @State private var page = 1
     @State private var mapView = false
     @State private var headerSize = CGSize()
     
@@ -57,20 +56,33 @@ struct ContentView: View {
             ZStack{
                 
                 ZStack {
+                    MapView()
+                        .ignoresSafeArea()
                     
-                    Map(coordinateRegion: $mapRegion, showsUserLocation: true)
-                        .onTapGesture {
-                            mapView = true
-                        }
-                        .ignoresSafeArea()
-                    if (!mapView) {
-                    Rectangle()
-                        .foregroundColor(Color.black.opacity(0.5))
-                        .onTapGesture {
-                            mapView = true
-                        }
-                        .ignoresSafeArea()
+                    HStack {
+                        Rectangle()
+                            .ignoresSafeArea()
+                            .frame(maxWidth: 26, maxHeight: .infinity)
+                            .opacity(0.02)
+                            .foregroundColor(Color.black)
+                        Spacer()
+                        Rectangle()
+                            .ignoresSafeArea()
+                            .frame(maxWidth: 26, maxHeight: .infinity)
+                            .opacity(0.02)
+                            .foregroundColor(Color.black)
                     }
+                    
+//                    if (!mapView) {
+//                    Rectangle()
+//                        .foregroundColor(Color.black.opacity(0.5))
+//                        .onTapGesture {
+//                            mapView = true
+//                        }
+//                        .ignoresSafeArea()
+//                    }
+                    
+                    
                     
                 }
                 VStack{
@@ -102,14 +114,3 @@ struct ContentView_Previews: PreviewProvider {
     }
 }
 
-final class ContentViewModel: ObservableObject {
-    var locationManager: CLLocationManager?
-    
-    func checkIfLocationServicesIsEnabled() {
-        if CLLocationManager.locationServicesEnabled() {
-            locationManager = CLLocationManager()
-        } else {
-            print("nooooo")
-        }
-    }
-}

@@ -72,10 +72,11 @@ struct storyboardApp: App {
     @State var page = 0
     
     @State var fullApp = false
-
-        var body: some Scene {
-            WindowGroup {
-                if !createProfileModel.finished && !(model.shouldSkipCreateAcc == "a") {
+    
+    var body: some Scene {
+        WindowGroup {
+            if !createProfileModel.finished && !(model.shouldSkipCreateAcc == "a") {
+                ZStack {
                     TabView(selection:$page) {
                         NavigationView {
                             ZStack {
@@ -106,35 +107,52 @@ struct storyboardApp: App {
                                                 model.isLoading = false
                                             }
                                         }))
-                                })
+                                    })
                             })
                         .tag(0)
                         if (model.isLoggedIn && model.shouldSkipCreateAcc == "b") {
                             VStack {
-                            CreateProfile()
+                                CreateProfile()
                                     .environmentObject(createProfileModel)
                             }
-                                .tag(1)
+                            .tag(1)
                         }
                         
                     }
-
-                        
                     
-                } else {
-                    ContentView()
-                        .accentColor(.white)
-                        .preferredColorScheme(.dark)
+                    if model.initializing {
+                        HStack {
+                            Spacer()
+                            VStack {
+                                Spacer()
+                                Image("logo_ontop")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(35)
+                                Spacer()
+                            }
+                            Spacer()
+                        }
+                        .background(Color.black)
+                    }
+                    
+                    
                 }
-            }
-            .onChange(of: phase) { _ in
-                setupColorScheme()
+                
+            } else {
+                ContentView()
+                    .accentColor(.white)
+                    .preferredColorScheme(.dark)
             }
         }
-
-        private func setupColorScheme() {
-            // We do this via the window so we can access UIKit components too.
-            let window = UIApplication.shared.windows.first
-            window?.overrideUserInterfaceStyle = .dark
-            window?.tintColor = UIColor(Color.red)
-        }}
+        .onChange(of: phase) { _ in
+            setupColorScheme()
+        }
+    }
+    
+    private func setupColorScheme() {
+        // We do this via the window so we can access UIKit components too.
+        let window = UIApplication.shared.windows.first
+        window?.overrideUserInterfaceStyle = .dark
+        window?.tintColor = UIColor(Color.red)
+    }}
