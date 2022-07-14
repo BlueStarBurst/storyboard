@@ -105,12 +105,24 @@ class FriendsPageViewModel: ObservableObject {
         })
     }
     
+    func update() {
+        getOutgoing()
+        getIncoming()
+        getFriends()
+    }
+    
 }
 
 struct FriendLabel: View {
     
     let name: String
     let username: String
+    var add = false
+    var remove = false
+    var incout = false
+    let update: () -> ()
+    
+    let disabled: Bool = false
     
     @State private var image = UIImage()
     
@@ -123,6 +135,7 @@ struct FriendLabel: View {
                 .edgesIgnoringSafeArea(.all)
                 .background(Color.pink)
                 .clipShape(Circle())
+                .padding(.trailing, 5)
             VStack {
                 HStack {
                     Text(name)
@@ -138,6 +151,70 @@ struct FriendLabel: View {
                 }
             }
             Spacer()
+            if add {
+                Image(systemName: "plus.circle.fill")
+                    .imageScale(.large)
+                    .font(.system(size: 20))
+                    .opacity(disabled ? 0.2 : 0.9)
+                    .onTapGesture {
+                        if disabled {
+                            return
+                        }
+                        
+                        let user = Auth.auth().currentUser
+                        guard let uid = user?.uid else {
+                            return
+                        }
+                        
+                        HTTPHandler().POST(url: "/addFriend", data: ["username": self.username, "id": uid]) { data in
+                            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
+                                print("Could not decode the data")
+                                return
+                            }
+                            
+                            if (decoded["success"]!) {
+                                print("SUCCESS")
+                                update()
+                            } else {
+                                print("FAIL")
+                            }
+                            
+                        }
+                    }
+            }
+            
+            if remove {
+                Image(systemName: "x.circle.fill")
+                    .imageScale(.large)
+                    .font(.system(size: 20))
+                    .opacity(disabled ? 0.2 : 0.9)
+                    .padding(.leading, 15)
+                    .onTapGesture {
+                        if disabled {
+                            return
+                            
+                        }
+                        let user = Auth.auth().currentUser
+                        guard let uid = user?.uid else {
+                            return
+                        }
+                        
+                        HTTPHandler().POST(url: (incout) ? "/removeIncOutFriend" : "/removeFriend", data: ["username": self.username, "id": uid]) { data in
+                            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
+                                print("Could not decode the data")
+                                return
+                            }
+                            
+                            if (decoded["success"]!) {
+                                print("SUCCESS")
+                                update()
+                            } else {
+                                print("FAIL")
+                            }
+                            
+                        }
+                    }
+            }
         }
     }
 }
@@ -150,11 +227,6 @@ struct FriendsPage: View {
     
     @FocusState private var focusedField: Field?
     
-    //    @State private var friendsList = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r"]
-    
-    @State private var friendsList = ["a","b","c"]
-    @State private var incomingList = ["d","e","f"]
-    @State private var outgoingList = ["g","h","i"]
     @StateObject var model = FriendsPageViewModel()
     
     @State private var requestPage = false
@@ -229,12 +301,13 @@ struct FriendsPage: View {
                         )
                         .padding(.horizontal, 10)
                 }
-            }
+            }.padding(.bottom, 20)
             
             if !requestPage {
                 List(model.friends, id: \.self) { friend in
-                    FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "")
-                        .padding(15)
+                    FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, update: model.update)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 5)
                         .listRowBackground(Color.black)
                         .listRowSeparator(.hidden)
                 }
@@ -242,30 +315,39 @@ struct FriendsPage: View {
 //                Spacer()
             } else {
                 ScrollView {
+                    if (model.incomingFriends.count > 0) {
                     Text("Incoming Requests")
-                        .padding(.top, 20)
                         .foregroundColor(Color.gray)
                     ForEach(model.incomingFriends, id: \.self) { friend in
-                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "")
-                            .padding(15)
+                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", add: true, remove: true, incout: true, update: model.update)
+                            .padding(.vertical,5)
+                            .padding(.horizontal,25)
                             .listRowBackground(Color.black)
                             .listRowSeparator(.hidden)
                     }
                     .listStyle(PlainListStyle())
+                    }
+                    if (model.outgoingFriends.count > 0) {
                     Text("Outgoing Requests")
                         .foregroundColor(Color.gray)
                     ForEach(model.outgoingFriends, id: \.self) { friend in
-                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "")
-                            .padding(15)
+                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, incout: true, update: model.update)
+                            .padding(.vertical,5)
+                            .padding(.horizontal,25)
                             .listRowBackground(Color.black)
                             .listRowSeparator(.hidden)
                     }
                     .listStyle(PlainListStyle())
+                    }
+                    Spacer()
                 }
+                .padding(.top, 15)
             }
         }
         .onAppear {
             model.getFriends()
+            model.getIncoming()
+            model.getOutgoing()
         }
         
     }
