@@ -120,6 +120,8 @@ struct FriendLabel: View {
     var add = false
     var remove = false
     var incout = false
+    var selectable = false
+    var onSelect =
     let update: () -> ()
     
     let disabled: Bool = false
