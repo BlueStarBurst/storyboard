@@ -121,10 +121,13 @@ struct FriendLabel: View {
     var remove = false
     var incout = false
     var selectable = false
-    var onSelect =
-    let update: () -> ()
+    @State var selected = false
+    var update: () -> Void = {}
     
     let disabled: Bool = false
+    
+    var onSelect: () -> Void = {}
+    var onUnselect: () -> Void = {}
     
     @State private var image = UIImage()
     
@@ -185,6 +188,18 @@ struct FriendLabel: View {
                     }
             }
             
+            if selectable {
+                if selected {
+                    Image(systemName: "circle.fill")
+                        .imageScale(.large)
+                        .font(.system(size: 20))
+                } else {
+                    Image(systemName: "circle")
+                        .imageScale(.large)
+                        .font(.system(size: 20))
+                }
+            }
+            
             if remove {
                 Image(systemName: "x.circle.fill")
                     .imageScale(.large)
@@ -218,6 +233,21 @@ struct FriendLabel: View {
                     }
             }
         }
+        .padding(.horizontal, selectable ? 20 : 0)
+        .padding(.vertical, selectable ? 5 : 0)
+        .background(selectable ? (selected ? Color(red: 0.1, green: 0.1, blue: 0.1) : Color.black) : Color.black)
+        .onTapGesture {
+            if (selectable) {
+                selected = !selected
+                if (selected) {
+                    onSelect()
+                } else {
+                    onUnselect()
+                }
+                update()
+            }
+        }
+        
     }
 }
 

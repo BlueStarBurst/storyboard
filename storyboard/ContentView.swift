@@ -87,11 +87,9 @@ struct ContentView: View {
                 }
                 VStack{
                     HStack {
-                        Text("friends")
                         Spacer()
                         Text("live")
                         Spacer()
-                        Text("add pin")
                     }
                     
                     .padding([.bottom , .trailing , .leading ], 15)
