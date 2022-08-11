@@ -18,7 +18,7 @@ extension String: Identifiable {
 struct ContentView: View {
     
     
-    @State private var page = 1
+    @State private var page = 2
     @State private var mapView = false
     @State private var headerSize = CGSize()
     

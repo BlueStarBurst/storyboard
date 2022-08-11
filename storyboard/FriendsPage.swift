@@ -9,41 +9,63 @@ import SwiftUI
 import Firebase
 import SDWebImageSwiftUI
 
+extension AnyTransition {
+    static var inOutTrailing: AnyTransition {
+        .asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing))
+    }
+    
+    static var inOutLeading: AnyTransition {
+        .asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading))
+    }
+}
+
 class FriendsPageViewModel: ObservableObject {
     @Published var searchUser: String = ""
     @Published var error: Bool = false
     @Published var errorMsg: String = ""
+    @Published var isSearching: Bool = false
     
     @Published var friends: [[String: String]] = [[:]]
     @Published var incomingFriends: [[String: String]] = [[:]]
     @Published var outgoingFriends: [[String: String]] = [[:]]
+    @Published var searchResults: [[String: String]] = [[:]]
     
     func checkUser() {
         
         if searchUser == "" {
+            self.searchResults = [[:]]
+            self.error = false
             return
         }
-        HTTPHandler().POST(url: "/doesUserExist", data: [self.searchUser]) { data in
-            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
+        
+        //        if (searchUser.count < 5) {
+        //            return
+        //        }
+        
+        HTTPHandler().POST(url: "/getUsers", data: ["search": self.searchUser]) { data in
+            guard let decoded = try? JSONDecoder().decode([[String: String]].self, from: data) else {
                 print("Could not decode the data")
                 return
             }
             
-            if (!decoded["exists"]!) {
+            if (decoded.count < 1) {
+                self.error = true
+                self.errorMsg = "This place seems a little empty... Make sure everything is spelled correctly and try again!"
+            } else {
+                self.searchResults = decoded
                 self.error = false
-                self.errorMsg = "That user doesn't exist!"
             }
         }
     }
     
-    func requestFriend() {
+    func requestFriend(username: String) {
         
         let user = Auth.auth().currentUser
         guard let uid = user?.uid else {
             return
         }
         
-        HTTPHandler().POST(url: "/addFriend", data: ["username": self.searchUser, "id": uid]) { data in
+        HTTPHandler().POST(url: "/addFriend", data: ["username": username, "id": uid]) { data in
             guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
                 print("Could not decode the data")
                 return
@@ -51,8 +73,19 @@ class FriendsPageViewModel: ObservableObject {
             
             if (decoded["success"]!) {
                 print("SUCCESS")
+                self.searchResults = [[:]]
+                self.searchUser = ""
+                self.isSearching = false
+                self.getIncoming()
+                self.getOutgoing()
+                
             } else {
                 print("FAIL")
+                self.searchResults = [[:]]
+                self.searchUser = ""
+                self.isSearching = false
+                
+                
             }
             
         }
@@ -142,6 +175,7 @@ class User {
 }
 
 var CurrentUser: User = User(name: "", user: "")
+var loaded = false
 
 struct FriendLabel: View {
     
@@ -165,8 +199,8 @@ struct FriendLabel: View {
         HStack {
             WebImage(url: URL(string:image ?? ""))
                 .resizable()
-                .scaledToFill()
                 .frame(maxWidth: 60, maxHeight: 60)
+                .scaledToFill()
                 .edgesIgnoringSafeArea(.all)
                 .background(Color.pink)
                 .clipShape(Circle())
@@ -291,142 +325,258 @@ struct FriendsPage: View {
     
     @StateObject var model = FriendsPageViewModel()
     
+    @ObservedObject var keyboardResponder = KeyboardResponder()
+    
     @State private var requestPage = false
     
     @State private var friendSearch: String = ""
     var body: some View {
-        VStack {
-//            Button(action: {try! Auth.auth().signOut()}, label: {
-//                Text("next")
-//                    .fontWeight(.bold)
-//                    .foregroundColor(.white)
-//                    .padding(.vertical)
-//                    .frame(maxWidth: .infinity)
-//                    .background(Color.pink)
-//                    .cornerRadius(8)
-//            })
-//            .padding(.top,10)
-//            .padding(.bottom,55)
-//            .padding(.horizontal)
-            
-            FriendLabel(name: CurrentUser.name, username: CurrentUser.user, image: CurrentUser.pfp)
-            
-            HStack{
-                TextField("Username", text:$model.searchUser)
-                    .focused($focusedField, equals: .myField)
-                    .onChange(of: model.searchUser) {
-                        print($0)
-                        model.checkUser()
-                    }
-                    .padding(.vertical,15)
-                    .padding(.horizontal)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(model.searchUser == "" ? Color.gray :
-                                        Color.pink,lineWidth: 1.5
-                                   )
-                    )
+        ZStack{
+            VStack {
+                //            Button(action: {try! Auth.auth().signOut()}, label: {
+                //                Text("next")
+                //                    .fontWeight(.bold)
+                //                    .foregroundColor(.white)
+                //                    .padding(.vertical)
+                //                    .frame(maxWidth: .infinity)
+                //                    .background(Color.pink)
+                //                    .cornerRadius(8)
+                //            })
+                //            .padding(.top,10)
+                //            .padding(.bottom,55)
+                //            .padding(.horizontal)
                 
-                Image(systemName: "magnifyingglass")
-                    .imageScale(.large)
-                    .padding(.leading, 10)
-                    .onTapGesture {
-                        print("TAP")
-                        model.requestFriend()
+                if CurrentUser.name != "" {
+                    
+                    HStack {
+                        WebImage(url: URL(string:CurrentUser.pfp ))
+                            .resizable()
+                            .frame(maxWidth: 75, maxHeight: 75)
+                            .scaledToFill()
+                            .edgesIgnoringSafeArea(.all)
+                            .background(Color.pink)
+                            .clipShape(Circle())
+                            .padding(.trailing, 5)
+                        VStack {
+                            HStack {
+                                Text(CurrentUser.name)
+                                    .frame(alignment: .leading)
+                                    .font(.system(size: 22))
+                                Spacer()
+                            }
+                            HStack {
+                                Text("@" + CurrentUser.user)
+                                    .font(.system(size: 17))
+                                    .frame(alignment: .leading)
+                                    .foregroundColor(Color.gray)
+                                Spacer()
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "square.and.pencil")
+                            .imageScale(.large)
+                            .font(.system(size: 20))
                     }
+                    .padding([.leading,.trailing],20)
+                    .padding([.top],6)
+                    .onAppear {
+                        withAnimation {loaded = true}
+                    }
+                }
+                
+                
+                
+                
+                if loaded {
+                    
+                    HStack {
+                        if !requestPage {
+                            Text("Friends")
+                                .overlay(
+                                    Rectangle()
+                                        .fill(Color.white)
+                                        .frame(height:2, alignment: .bottom)
+                                        .offset(y: 15)
+                                )
+                                .padding(.horizontal, 10)
+                            Text("Requests")
+                                .padding(.horizontal, 10)
+                                .onTapGesture {
+                                    requestPage = true
+                                }
+                        }
+                        else {
+                            Text("Friends")
+                                .padding(.horizontal, 10)
+                                .onTapGesture {
+                                    requestPage = false
+                                }
+                            Text("Requests")
+                                .overlay(
+                                    Rectangle()
+                                        .fill(Color.white)
+                                        .frame(height:2, alignment: .bottom)
+                                        .offset(y: 15)
+                                )
+                                .padding(.horizontal, 10)
+                        }
+                    }.padding(.bottom, 20)
+                    
+                    
+                    
+                    if !requestPage {
+                        List(model.friends, id: \.self) { friend in
+                            FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, update: model.update, image: friend["pfp"])
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 5)
+                                .listRowBackground(Color.black)
+                                .listRowSeparator(.hidden)
+                        }
+                        .listStyle(PlainListStyle())
+                        .animation(.easeInOut)
+                        .transition(loaded == true ? .inOutLeading : .opacity)
+                        //                Spacer()
+                    } else {
+                        ScrollView {
+                            if (model.incomingFriends.count > 0) {
+                                Text("Incoming Requests")
+                                    .foregroundColor(Color.gray)
+                                ForEach(model.incomingFriends, id: \.self) { friend in
+                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", add: true, remove: true, incout: true, update: model.update, image: friend["pfp"])
+                                        .padding(.vertical,5)
+                                        .padding(.horizontal,25)
+                                        .listRowBackground(Color.black)
+                                        .listRowSeparator(.hidden)
+                                }
+                                .listStyle(PlainListStyle())
+                            }
+                            if (model.outgoingFriends.count > 0) {
+                                Text("Outgoing Requests")
+                                    .foregroundColor(Color.gray)
+                                ForEach(model.outgoingFriends, id: \.self) { friend in
+                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, incout: true, update: model.update, image: friend["pfp"])
+                                        .padding(.vertical,5)
+                                        .padding(.horizontal,25)
+                                        .listRowBackground(Color.black)
+                                        .listRowSeparator(.hidden)
+                                }
+                                .listStyle(PlainListStyle())
+                            }
+                            Spacer()
+                        }
+                        .padding(.top, 15)
+                        .animation(.easeInOut)
+                        .transition(loaded ? .move(edge: .trailing) : .opacity)
+                    }
+                }
+                Spacer()
             }
-            .padding()
-            .padding(.horizontal, 15)
-            if model.error {
+            .onAppear {
+                model.getFriends()
+                model.getIncoming()
+                model.getOutgoing()
+            }
+            
+            
+            VStack {
+                Spacer()
                 HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                    Text(model.errorMsg)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Button(action: {withAnimation {model.isSearching = true}}, label: {
+                        Text("add friend")
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.vertical)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.pink)
+                            .cornerRadius(8)
+                    })
+                    .padding(.top,10)
+                    .padding(.bottom,25)
+                    .padding(.horizontal)
                 }
-                .padding(.top, 20)
+            }
+            
+            
+            if model.isSearching {
+            
+            VStack {
+                
+                ZStack {
+                    HStack {
+                        Image(systemName: "chevron.backward").onTapGesture {
+                            withAnimation {
+                                model.isSearching = false
+                            }
+                        }
+                        Spacer()
+                    }
+                    Text("Search for a User")
+                        .font(.system(size: 20))
+                    
+                    
+                }.padding()
+                
+                HStack{
+                    TextField("Username", text:$model.searchUser)
+                        .focused($focusedField, equals: .myField)
+                        .onChange(of: model.searchUser) {
+                            print($0)
+                            model.checkUser()
+                        }
+                        .padding(.vertical,15)
+                        .padding(.horizontal)
+                        .background(
+                            Color(red: 46.0/255, green: 46.0/255, blue: 46.0/255)
+                        )
+                        .cornerRadius(16)
+                    
+                }
+                .padding()
+                .padding(.horizontal, 15)
+                if model.error {
+                    
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(model.errorMsg)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding([.bottom], 10)
+                    .padding(.horizontal, 30)
+                    
+                }
+                ScrollView {
+                    if (model.searchResults.count > 0 && model.searchResults[0] != [:]) {
+                        ForEach(model.searchResults, id: \.self) { friend in
+                                FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", selectable: true, onSelect: {
+                                    withAnimation {
+                                        focusedField = nil
+                                        model.requestFriend(username: friend["username"] ?? "")
+                                        requestPage = true
+                                    }
+                                }, onUnselect: {}, image: friend["pfp"])
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.hidden)
+                            
+                        }
+                        .listStyle(PlainListStyle())
+                    }
+                }
+                Spacer()
+                
+            }
+            .background(Color.black)
+            .cornerRadius(8)
+            //                .offset(y: -keyboardResponder.currentHeight*0.9)
+            .transition(.move(edge: .bottom))
                 
             }
             
-            HStack {
-                if !requestPage {
-                    Text("Friends")
-                        .overlay(
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(height:2, alignment: .bottom)
-                                .offset(y: 15)
-                        )
-                        .padding(.horizontal, 10)
-                    Text("Requests")
-                        .padding(.horizontal, 10)
-                        .onTapGesture {
-                            requestPage = true
-                        }
-                }
-                else {
-                    Text("Friends")
-                        .padding(.horizontal, 10)
-                        .onTapGesture {
-                            requestPage = false
-                        }
-                    Text("Requests")
-                        .overlay(
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(height:2, alignment: .bottom)
-                                .offset(y: 15)
-                        )
-                        .padding(.horizontal, 10)
-                }
-            }.padding(.bottom, 20)
             
-            if !requestPage {
-                List(model.friends, id: \.self) { friend in
-                    FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, update: model.update, image: friend["pfp"])
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 5)
-                        .listRowBackground(Color.black)
-                        .listRowSeparator(.hidden)
-                }
-                .listStyle(PlainListStyle())
-//                Spacer()
-            } else {
-                ScrollView {
-                    if (model.incomingFriends.count > 0) {
-                    Text("Incoming Requests")
-                        .foregroundColor(Color.gray)
-                    ForEach(model.incomingFriends, id: \.self) { friend in
-                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", add: true, remove: true, incout: true, update: model.update, image: friend["pfp"])
-                            .padding(.vertical,5)
-                            .padding(.horizontal,25)
-                            .listRowBackground(Color.black)
-                            .listRowSeparator(.hidden)
-                    }
-                    .listStyle(PlainListStyle())
-                    }
-                    if (model.outgoingFriends.count > 0) {
-                    Text("Outgoing Requests")
-                        .foregroundColor(Color.gray)
-                    ForEach(model.outgoingFriends, id: \.self) { friend in
-                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, incout: true, update: model.update, image: friend["pfp"])
-                            .padding(.vertical,5)
-                            .padding(.horizontal,25)
-                            .listRowBackground(Color.black)
-                            .listRowSeparator(.hidden)
-                    }
-                    .listStyle(PlainListStyle())
-                    }
-                    Spacer()
-                }
-                .padding(.top, 15)
-            }
+            
+            
+        }.onTapGesture {
+            focusedField = nil
         }
-        .onAppear {
-            model.getFriends()
-            model.getIncoming()
-            model.getOutgoing()
-        }
-        
     }
 }
 
