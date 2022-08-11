@@ -9,58 +9,7 @@ import SwiftUI
 import Firebase
 import JWTKit
 
-class MyFilesManager {
-    enum Error: Swift.Error {
-        case fileAlreadyExists
-        case invalidDirectory
-        case writingFailed
-        case fileNotFound
-        case readingFailed
-    }
-    
-    let fileManager: FileManager
-    init (fileManager: FileManager = .default) {
-        self.fileManager = fileManager
-    }
-    func save(fileNamed: String, data: Data) throws {
-        guard let url = makeURL(forFileNamed: fileNamed) else {
-            throw Error.invalidDirectory
-        }
-        if fileManager.fileExists(atPath: url.absoluteString) {
-            print("exists")
-            throw Error.fileAlreadyExists
-        }
-        do {
-            try data.write(to: url)
-        } catch {
-            debugPrint(error)
-            throw Error.writingFailed
-        }
-    }
-    private func makeURL(forFileNamed fileName: String) -> URL? {
-        guard let url = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        return url.appendingPathComponent(fileName)
-    }
-    
-    func read(fileNamed: String) throws -> Data {
-        guard let url = makeURL(forFileNamed: fileNamed) else {
-            print("inv dir")
-            throw Error.invalidDirectory
-        }
-        guard fileManager.fileExists(atPath: url.absoluteString) else {
-            print("file not found")
-            throw Error.fileNotFound
-        }
-        do {
-            return try Data(contentsOf: url)
-        } catch {
-            debugPrint(error)
-            throw Error.readingFailed
-        }
-    }
-}
+
 
 class LoginViewModel: ObservableObject {
     @Published var countryCode = ""
@@ -73,8 +22,8 @@ class LoginViewModel: ObservableObject {
     @Published var verificationCode = ""
     
     @Published var isLoading = false
-    @Published var isLoggedIn = false //false
-    @Published var shouldSkipCreateAcc = "c" //c b is createprofile
+    @Published var isLoggedIn = false //should be false
+    @Published var shouldSkipCreateAcc = "c" //should be c      b is createprofile
     @Published var verifyScreen = false
     
     @Published var initializing = true

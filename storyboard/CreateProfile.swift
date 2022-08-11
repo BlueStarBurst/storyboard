@@ -8,24 +8,65 @@
 import SwiftUI
 import UIKit
 import Firebase
+import FirebaseStorage
 import JWTKit
 
+//class FirebaseManager: NSObject {
+//
+//    let auth: Auth
+//    let storage: Storage
+//
+//    static let shared = FirebaseManager()
+//
+//    override init() {
+//        FirebaseApp.configure()
+//
+//        self.auth = Auth.auth()
+//        self.storage = Storage.storage()
+//
+//        super.init()
+//    }
+//
+//}
+
 struct ImagePicker: UIViewControllerRepresentable {
-    
-    var sourceType: UIImagePickerController.SourceType = .photoLibrary
-    
-    func makeUIViewController(context: UIViewControllerRepresentableContext<ImagePicker>) -> UIImagePickerController {
-        
-        let imagePicker = UIImagePickerController()
-        imagePicker.allowsEditing = false
-        imagePicker.sourceType = sourceType
-        
-        return imagePicker
+
+    @Binding var image: UIImage?
+
+    private let controller = UIImagePickerController()
+
+    func makeCoordinator() -> Coordinator {
+        return Coordinator(parent: self)
     }
-    
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePicker>) {
-        
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+
+        let parent: ImagePicker
+
+        init(parent: ImagePicker) {
+            self.parent = parent
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            parent.image = info[.originalImage] as? UIImage
+            picker.dismiss(animated: true)
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            picker.dismiss(animated: true)
+        }
+
     }
+
+    func makeUIViewController(context: Context) -> some UIViewController {
+        controller.delegate = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {
+
+    }
+
 }
 
 
@@ -37,6 +78,8 @@ class CreateProfileViewModel: ObservableObject {
     
     @Published var error = false
     @Published var errorMsg = "Error"
+    
+    @Published var image: UIImage?
     
     func checkUser() {
         
@@ -149,11 +192,53 @@ class CreateProfileViewModel: ObservableObject {
     }
     
     func isUserCreated(success: Bool) {
+        if success == true {
+            persistImageToStorage()
+        }
         self.finished = success
     }
     
     func submit() {
         checkUser()
+    }
+    
+    private func persistImageToStorage() {
+        print("PERSIST")
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let ref = Storage.storage().reference(withPath: uid)
+        guard let imageData = self.image?.jpegData(compressionQuality: 0.5) else { return }
+        ref.putData(imageData, metadata: nil) { metadata, err in
+            if let err = err {
+                print("Failed to push image to Storage: \(err)")
+                return
+            }
+            
+            ref.downloadURL { url, err in
+                if let err = err {
+                    print("Failed to retrieve downloadURL: \(err)")
+                    return
+                }
+                
+                let user = Auth.auth().currentUser
+                guard let uid = user?.uid else {
+                    return
+                }
+                
+                
+                
+                HTTPHandler().POST(url: "/setPfp", data: ["id": uid, "pfp": url?.absoluteString], completion: { data in
+                    guard let decoded = try? JSONDecoder().decode([String:String].self, from: data) else {
+                        print("Could not decode the data")
+                        return
+                    }
+                    print("AAAAAAAAAAA")
+                    print(decoded)
+                })
+                
+                //                    self.loginStatusMessage = "Successfully stored image with url: \(url?.absoluteString ?? "")"
+                print(url?.absoluteString)
+            }
+        }
     }
 }
 
@@ -164,28 +249,36 @@ struct CreateProfile: View {
     }
     
     @EnvironmentObject var model : CreateProfileViewModel
-    @State private var image = UIImage()
+    @State var image: UIImage?
+    @State var shouldShowImagePicker = false
     
     @FocusState private var focusedField: Field?
     
     var body: some View {
         VStack {
             ZStack {
-                Image(uiImage: self.image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(minWidth: 0, maxWidth: 150, maxHeight: 150)
-                    .edgesIgnoringSafeArea(.all)
-                    .background(Color.gray)
-                    .clipShape(Circle())
-                Button (action: {print("image")}){
-                    Text("")
-                        .frame(width:150,height:150)
+                Button {
+                    focusedField = nil
+                    shouldShowImagePicker.toggle()
+                } label: {
+                    VStack {
+                        if let image = model.image {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 150, height: 150)
+                                .cornerRadius(75)
+                        } else {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 75))
+                                .padding()
+                                .foregroundColor(Color(.label))
+                        }
+                    }
+                    .overlay(RoundedRectangle(cornerRadius: 75)
+                        .stroke(Color.black, lineWidth: 3)
+                    )
                 }
-                .foregroundColor(Color.pink)
-                .background(Color.pink)
-                .frame(minWidth: 150, minHeight: 150)
-                .clipShape(Circle())
                 
             }.padding(.bottom,25)
             Text("Your Real Name (What your friends see)")
@@ -245,6 +338,13 @@ struct CreateProfile: View {
             .padding(.top, 10)
         }
         .padding(.horizontal, 30)
+        .fullScreenCover(isPresented: $shouldShowImagePicker, onDismiss: nil) {
+            ImagePicker(image: $model.image)
+                .ignoresSafeArea()
+        }
+        .onTapGesture {
+            focusedField = nil
+        }
         
     }
 }

@@ -10,208 +10,27 @@ import MapKit
 import CoreLocation
 import Contacts
 import Firebase
-extension CLPlacemark {
-    var formattedAddress: String? {
-        
-        guard let postalAddress = postalAddress else {
-            return nil
-        }
-        let formatter = CNPostalAddressFormatter()
-        return formatter.string(from: postalAddress)
-    }
-}
 
-class KeyboardResponder: ObservableObject {
-    
-    //2. Keeping track off the keyboard's current height
-    @Published var currentHeight: CGFloat = 0
-    
-    //3. We use the NotificationCenter to listen to system notifications
-    var _center: NotificationCenter
-    
-    init(center: NotificationCenter = .default) {
-        _center = center
-        //4. Tell the notification center to listen to the system keyboardWillShow and keyboardWillHide notification
-        _center.addObserver(self, selector: #selector(keyBoardWillShow(notification:)), name: UIResponder.keyboardWillShowNotification, object: nil)
-        _center.addObserver(self, selector: #selector(keyBoardWillHide(notification:)), name: UIResponder.keyboardWillHideNotification, object: nil)
-    }
-    
-    //5.1. Update the currentHeight variable when the keyboards gets toggled
-    @objc func keyBoardWillShow(notification: Notification) {
-        if let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue {
-            withAnimation {
-                currentHeight = keyboardSize.height
-            }
-        }
-    }
-    
-    //5.2 Update the currentHeight variable when the keyboards collapses
-    @objc func keyBoardWillHide(notification: Notification) {
-        withAnimation {
-            currentHeight = 0
-        }
-    }
-}
+var real_pins: [Pin] = []
 
 class MapPin: NSObject, MKAnnotation {
     
     let coordinate: CLLocationCoordinate2D
     let title: String?
     let subtitle: String?
+    let image: UIImage?
     let action: (() -> Void)?
     
     init(coordinate: CLLocationCoordinate2D,
          title: String? = nil,
          subtitle: String? = nil,
-         action: (() -> Void)? = nil) {
+         action: (() -> Void)? = nil,
+         image: UIImage? = nil) {
         self.coordinate = coordinate
         self.title = title
         self.subtitle = subtitle
-        self.action = action
-    }
-    
-}
-
-struct Map : UIViewRepresentable {
-    
-    class Coordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelegate {
-        
-        @Binding var selectedPin: MapPin?
-        
-        var parent: Map
-        var gRecognizer = UILongPressGestureRecognizer()
-        
-        init(_ parent: Map, selectedPin: Binding<MapPin?>) {
-            self.parent = parent
-            
-            _selectedPin = selectedPin
-            super.init()
-            self.gRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(tapHandler))
-            self.gRecognizer.delegate = self
-            self.parent.mapView.addGestureRecognizer(gRecognizer)
-        }
-        
-        @objc func tapHandler(_ gesture: UILongPressGestureRecognizer) {
-            if parent.interact { return }
-            
-            let location = gRecognizer.location(in: self.parent.mapView)
-            
-            let coordinate = self.parent.mapView.convert(location, toCoordinateFrom: self.parent.mapView)
-            
-            //            print(coordinate)
-            self.parent.tapEmptySpot(coordinate: coordinate)
-        }
-        
-        
-        
-        func mapView(_ mapView: MKMapView,
-                     didSelect view: MKAnnotationView) {
-            guard let pin = view.annotation as? MapPin else {
-                return
-            }
-            pin.action?()
-            selectedPin = pin
-        }
-        
-        func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
-            guard (view.annotation as? MapPin) != nil else {
-                return
-            }
-            selectedPin = nil
-        }
-    }
-    
-    func coordsToLoc(coords: CLLocationCoordinate2D) -> CLLocation {
-        return CLLocation(latitude: coords.latitude, longitude: coords.longitude)
-    }
-    
-    @Binding var pins: [MapPin]
-    @Binding var selectedPin: MapPin?
-    
-    @Binding var interact: Bool
-    @Binding var name: String
-    @Binding var add: String
-    
-    private let manager = CLLocationManager()
-    private let geocoder = CLGeocoder()
-    
-    @Binding var isCreatingPin: Bool
-    @Binding var newPin: MapPin
-    
-    let mapView = MKMapView(frame: .zero)
-    
-    func makeCoordinator() -> Coordinator {
-        return Coordinator(self, selectedPin: $selectedPin)
-    }
-    
-    func makeUIView(context: Context) -> MKMapView {
-        
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.requestWhenInUseAuthorization()
-        manager.startUpdatingLocation()
-        
-        mapView.showsUserLocation = true
-        guard let coordinate = mapView.userLocation.location?.coordinate else { return mapView }
-        let region = mapView.regionThatFits(MKCoordinateRegion(center: coordinate, latitudinalMeters: 200, longitudinalMeters: 200))
-        mapView.setRegion(region, animated: true)
-        
-        mapView.delegate = context.coordinator
-        
-        return mapView
-    }
-    
-    func updateUIView(_ uiView: MKMapView, context: Context) {
-        
-        guard var coordinate = manager.location?.coordinate else { return }
-        if (isCreatingPin) {
-            coordinate = newPin.coordinate
-        }
-        
-        let region = uiView.regionThatFits(MKCoordinateRegion(center: coordinate, latitudinalMeters: isCreatingPin ? 200 : 2400, longitudinalMeters: isCreatingPin ? 200 : 2400))
-        uiView.setRegion(region, animated: true)
-        uiView.removeAnnotations(uiView.annotations)
-        uiView.addAnnotations(pins)
-        if (isCreatingPin) {
-            let ann: [MapPin] = [newPin]
-            uiView.addAnnotations(ann)
-        }
-        if let selectedPin = selectedPin {
-            uiView.selectAnnotation(selectedPin, animated: false)
-        }
-        
-        
-    }
-    
-    func tapEmptySpot(coordinate: CLLocationCoordinate2D) {
-        let coords = coordsToLoc(coords: coordinate)
-        geocoder.reverseGeocodeLocation(coords, completionHandler: { (places, error) in
-            if error == nil {
-                let firstLocation = places?[0]
-                print(firstLocation?.name)
-                name = firstLocation?.name ?? "Some Random Place"
-                print((firstLocation?.subThoroughfare ?? "") + " " + (firstLocation?.thoroughfare ?? ""))
-                add = (firstLocation?.subThoroughfare ?? "") + " " + (firstLocation?.thoroughfare ?? "")
-                
-                if add == name {
-                    name = "Some Random Place"
-                }
-                
-                add = (firstLocation?.formattedAddress)!
-                print(add)
-                
-                isCreatingPin = true
-                newPin = MapPin(coordinate: coordinate,
-                                title: "New Event",
-                                subtitle: "",
-                                action: { print("Hey mate!") } )
-                
-                
-                withAnimation {interact = true}
-                
-            } else {
-                print("OH DEAR")
-            }
-        })
+        self.action = {print("HI")}
+        self.image = image
     }
     
 }
@@ -224,25 +43,17 @@ class CreateEventModel: ObservableObject {
     @Published var date = Date()
     
     @Published var newPin = MapPin(coordinate: CLLocationCoordinate2D(latitude: 0,
-                                                                      longitude: 0),
-                                   title: "Temp Pin",
-                                   subtitle: "Replacable",
-                                   action: {} )
+                                                                      longitude: 0), title: "tempPin")
     
     @Published var friends: [[String: String]] = [[:]]
     @Published var searchText: String = ""
     
     @Published var events: [[String:String]] = [[:]]
-    
-    @Published var pins: [MapPin] = [
-        //        MapPin(coordinate: CLLocationCoordinate2D(latitude: 51.509865,
-        //                                                  longitude: -0.118092),
-        //               title: "London",
-        //               subtitle: "Big Smoke",
-        //               action: { print("Hey mate!") } )
-    ]
+    @Published var incomingEvents: [[String:String]] = [[:]]
     
     @Published var invitedFriends: [String] = []
+    
+    @Published var pins: [MapPin] = []
     
     var searchResults: [[String:String]] {
         if self.searchText.isEmpty {
@@ -342,14 +153,42 @@ class CreateEventModel: ObservableObject {
         })
     }
     
+    func getIncoming() {
+        let user = Auth.auth().currentUser
+        guard let uid = user?.uid else {
+            return
+        }
+        
+        HTTPHandler().POST(url: "/getIncomingEvents", data: ["id": uid], completion: { data in
+            guard let decoded = try? JSONDecoder().decode([String: [[String:String]]].self, from: data) else {
+                print("Could not decode the data")
+                return
+            }
+            self.incomingEvents = decoded["events"]!
+            self.translatePins()
+        })
+    }
+    
     func translatePins() {
         for event in events {
-            pins.append(
-                MapPin(coordinate: decodeLocation(str: event["coords"]!),
-                       title: event["name"],
-                       subtitle: "",
-                       action: { print("Hey mate!") } )
+            if (event["name"] == nil) {
+                break
+            }
+            self.pins.append(
+                MapPin(coordinate: decodeLocation(str: event["coords"]!), title: event["name"] ?? "", action: {print("PIN")})
             )
+            
+            real_pins.append(Pin(name: event["name"] ?? "", coordinate: decodeLocation(str: event["coords"]!)))
+        }
+        for event in incomingEvents {
+            if (event["name"] == nil) {
+                break
+            }
+            self.pins.append(
+                MapPin(coordinate: decodeLocation(str: event["coords"]!), title: event["name"] ?? "", action: {print("PIN")})
+            )
+            
+            real_pins.append(Pin(name: event["name"] ?? "", coordinate: decodeLocation(str: event["coords"]!)))
         }
         
     }
@@ -364,7 +203,8 @@ struct EventTab: View {
     var body: some View {
         HStack {
             Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 25))
+                .font(.system(size: 28))
+                .padding(.trailing, 5)
             Text(event["name"] ?? "")
                 .frame(alignment: .leading)
             Spacer()
@@ -375,6 +215,19 @@ struct EventTab: View {
 }
 
 
+
+struct Pin: Identifiable {
+    let id = UUID()
+    let name: String
+    var coordinate: CLLocationCoordinate2D
+}
+
+func getDist(from: CGPoint, to: CGPoint) -> CGFloat {
+    return sqrt(
+        (from.x - to.x) * (from.x - to.x) + (from.y - to.y) * (from.y - to.y)
+    )
+}
+
 struct MapView: View {
     enum Field: Hashable {
         case myField
@@ -384,7 +237,8 @@ struct MapView: View {
     
     @StateObject var model = CreateEventModel()
     
-    @StateObject var manager = LocationManager()
+    @StateObject var manager = LocationManagerNew()
+    
     @State var tracking: MapUserTrackingMode = .none
     
     @State private var events = ["a", "b", "c"]
@@ -393,6 +247,7 @@ struct MapView: View {
     
     
     @State var selectedPin: MapPin?
+    @State var oldPin: MapPin?
     
     @State var isCreatingPin = false
     
@@ -414,7 +269,60 @@ struct MapView: View {
     
     var body: some View {
         ZStack {
-            Map(pins: $model.pins, selectedPin: $selectedPin, interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin)
+            
+//            Map(coordinateRegion: $manager.region, showsUserLocation: true, annotationItems: real_pins) { place in
+//                MapAnnotation(coordinate: place.coordinate) {
+//                    VStack {
+//                        VStack(spacing:0) {
+//                            Image(systemName: "mappin.circle.fill")
+//                                .font(.title)
+//                                .foregroundColor(.red)
+//                            Image(systemName: "arrowtriangle.down.fill")
+//                                .font(.caption)
+//                                .foregroundColor(.red)
+//                                .offset(x: 0, y: -5)
+//                        }
+//                        Text(place.name)
+//                            .fixedSize(horizontal: false, vertical: true)
+//                            .multilineTextAlignment(.center)
+//                            .frame(maxWidth: 150, alignment: .center)
+//                            .font(.system(size: 14))
+//                    }
+//                }
+//
+//            }
+//
+//            .onTapGesture {
+//                withAnimation {
+//                    isCreatingPin = false
+//                    interact = false
+//                    page = 1
+//                }
+//            }
+//            .opacity(interact ? 0.5 : 1)
+//            .onAppear {
+//                model.getEvents()
+//                model.getIncoming()
+//            }
+//            .edgesIgnoringSafeArea(.all)
+            
+            
+//            MapO(pins: $model.pins, selectedPin: $selectedPin, interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin)
+//                .onTapGesture {
+//                    withAnimation {
+//                        isCreatingPin = false
+//                        interact = false
+//                        page = 1
+//                    }
+//                }
+//                .opacity(interact ? 0.5 : 1)
+//
+            
+            CustomMap(annotations: $model.pins,interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin, oldPin: $oldPin)
+                .onAppear {
+                    model.getEvents()
+                    model.getIncoming()
+                }
                 .onTapGesture {
                     withAnimation {
                         isCreatingPin = false
@@ -423,10 +331,9 @@ struct MapView: View {
                     }
                 }
                 .opacity(interact ? 0.5 : 1)
-                .onAppear {
-                    model.getEvents()
-                }
-            if model.events.count > 0 {
+            
+            
+            if model.events.count > 0 || model.incomingEvents.count > 0 {
                 VStack {
                     Spacer()
                     VStack {
@@ -446,6 +353,12 @@ struct MapView: View {
                                     .frame(maxWidth: .infinity)
                                     .padding(.bottom, 15)
                             }
+                            Text("Pending Events")
+                            ForEach (model.incomingEvents, id: \.self) { event in
+                                EventTab(event: event)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.bottom, 18)
+                            }
                         }.frame(height: 500)
                             .gesture(DragGesture()
                                 .onChanged {
@@ -453,6 +366,8 @@ struct MapView: View {
                                     print("ALOHA")
                                 }
                             )
+                        
+                        
                     }
                     .padding(5)
                     .background(Color.black)
@@ -591,7 +506,7 @@ struct MapView: View {
                                 
                                 List {
                                     ForEach(model.searchResults, id: \.self) { friend in
-                                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", selectable: true, onSelect: {model.invitedFriends.append((friend["username"] ?? "").lowercased())}, onUnselect: {model.invitedFriends = model.invitedFriends.filter{ $0 != (friend["username"] ?? "").lowercased()}})
+                                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", selectable: true, onSelect: {model.invitedFriends.append((friend["username"] ?? "").lowercased())}, onUnselect: {model.invitedFriends = model.invitedFriends.filter{ $0 != (friend["username"] ?? "").lowercased()}}, image: friend["pfp"])
                                             .listRowInsets(EdgeInsets())
                                             .listRowSeparator(.hidden)
                                     }

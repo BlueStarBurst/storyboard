@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Firebase
+import SDWebImageSwiftUI
 
 class FriendsPageViewModel: ObservableObject {
     @Published var searchUser: String = ""
@@ -63,6 +64,21 @@ class FriendsPageViewModel: ObservableObject {
             return
         }
         
+        try HTTPHandler().POST(url: "/getSelf", data: ["id": uid], completion: { data in
+            guard let decoded = try? JSONDecoder().decode([String: [String:String]].self, from: data) else {
+                print("Could not decode the data")
+                return
+            }
+            let user = decoded["user"]!
+            
+            CurrentUser.user = user["username"]!
+            CurrentUser.name = user["fullname"]!
+            CurrentUser.pfp = user["pfp"]!
+            
+            print(decoded)
+        })
+        
+        
         HTTPHandler().POST(url: "/getFriends", data: ["id": uid], completion: { data in
             guard let decoded = try? JSONDecoder().decode([String: [[String:String]]].self, from: data) else {
                 print("Could not decode the data")
@@ -113,6 +129,20 @@ class FriendsPageViewModel: ObservableObject {
     
 }
 
+class User {
+    var name: String = ""
+    var pfp: String = ""
+    var user: String = ""
+    
+    init(name: String, user: String, pfp: String = "") {
+        self.name = name
+        self.pfp = pfp
+        self.user = user
+    }
+}
+
+var CurrentUser: User = User(name: "", user: "")
+
 struct FriendLabel: View {
     
     let name: String
@@ -129,14 +159,14 @@ struct FriendLabel: View {
     var onSelect: () -> Void = {}
     var onUnselect: () -> Void = {}
     
-    @State private var image = UIImage()
+    let image: String?
     
     var body: some View {
         HStack {
-            Image(uiImage: self.image)
+            WebImage(url: URL(string:image ?? ""))
                 .resizable()
                 .scaledToFill()
-                .frame(minWidth: 0, maxWidth: 50, maxHeight: 50)
+                .frame(maxWidth: 60, maxHeight: 60)
                 .edgesIgnoringSafeArea(.all)
                 .background(Color.pink)
                 .clipShape(Circle())
@@ -233,8 +263,8 @@ struct FriendLabel: View {
                     }
             }
         }
-        .padding(.horizontal, selectable ? 20 : 0)
-        .padding(.vertical, selectable ? 5 : 0)
+        .padding(.horizontal, selectable ? 15 : 0)
+        .padding(.vertical, selectable ? 10 : 0)
         .background(selectable ? (selected ? Color(red: 0.1, green: 0.1, blue: 0.1) : Color.black) : Color.black)
         .onTapGesture {
             if (selectable) {
@@ -266,6 +296,21 @@ struct FriendsPage: View {
     @State private var friendSearch: String = ""
     var body: some View {
         VStack {
+//            Button(action: {try! Auth.auth().signOut()}, label: {
+//                Text("next")
+//                    .fontWeight(.bold)
+//                    .foregroundColor(.white)
+//                    .padding(.vertical)
+//                    .frame(maxWidth: .infinity)
+//                    .background(Color.pink)
+//                    .cornerRadius(8)
+//            })
+//            .padding(.top,10)
+//            .padding(.bottom,55)
+//            .padding(.horizontal)
+            
+            FriendLabel(name: CurrentUser.name, username: CurrentUser.user, image: CurrentUser.pfp)
+            
             HStack{
                 TextField("Username", text:$model.searchUser)
                     .focused($focusedField, equals: .myField)
@@ -337,7 +382,7 @@ struct FriendsPage: View {
             
             if !requestPage {
                 List(model.friends, id: \.self) { friend in
-                    FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, update: model.update)
+                    FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, update: model.update, image: friend["pfp"])
                         .padding(.horizontal, 5)
                         .padding(.vertical, 5)
                         .listRowBackground(Color.black)
@@ -351,7 +396,7 @@ struct FriendsPage: View {
                     Text("Incoming Requests")
                         .foregroundColor(Color.gray)
                     ForEach(model.incomingFriends, id: \.self) { friend in
-                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", add: true, remove: true, incout: true, update: model.update)
+                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", add: true, remove: true, incout: true, update: model.update, image: friend["pfp"])
                             .padding(.vertical,5)
                             .padding(.horizontal,25)
                             .listRowBackground(Color.black)
@@ -363,7 +408,7 @@ struct FriendsPage: View {
                     Text("Outgoing Requests")
                         .foregroundColor(Color.gray)
                     ForEach(model.outgoingFriends, id: \.self) { friend in
-                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, incout: true, update: model.update)
+                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", remove: true, incout: true, update: model.update, image: friend["pfp"])
                             .padding(.vertical,5)
                             .padding(.horizontal,25)
                             .listRowBackground(Color.black)

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		58557C95288DF724007C70E6 /* BetterMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58557C94288DF724007C70E6 /* BetterMap.swift */; };
+		58676425288CBE2100667C01 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58676424288CBE2000667C01 /* MapKit.framework */; };
+		5877B4A828A0684A00149623 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 5877B4A728A0684A00149623 /* FirebaseStorage */; };
+		5877B4AB28A0A3A400149623 /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5877B4AA28A0A3A400149623 /* SDWebImageSwiftUI */; };
 		644B7FFE287154E500B8383B /* storyboardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644B7FFD287154E500B8383B /* storyboardApp.swift */; };
 		644B8000287154E500B8383B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644B7FFF287154E500B8383B /* ContentView.swift */; };
 		644B8002287154E700B8383B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 644B8001287154E700B8383B /* Assets.xcassets */; };
@@ -44,6 +48,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		58557C94288DF724007C70E6 /* BetterMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterMap.swift; sourceTree = "<group>"; };
+		58676424288CBE2000667C01 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		644B7FFA287154E500B8383B /* storyboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = storyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		644B7FFD287154E500B8383B /* storyboardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = storyboardApp.swift; sourceTree = "<group>"; };
 		644B7FFF287154E500B8383B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -55,8 +61,7 @@
 		644B8018287154E800B8383B /* storyboardUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = storyboardUITests.swift; sourceTree = "<group>"; };
 		644B801A287154E800B8383B /* storyboardUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = storyboardUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		6487DE15287F46D5007A8637 /* FriendsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsPage.swift; sourceTree = "<group>"; };
-		648CA81E2879D8F9000D5B3B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		648CA827287A83D0000D5B3B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		648CA81E2879D8F9000D5B3B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		648CA82A287A8AC6000D5B3B /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		648CA82F287B33AF000D5B3B /* CreateProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateProfile.swift; sourceTree = "<group>"; };
 		6495C3002880759A00A2F4B4 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
@@ -69,10 +74,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5877B4AB28A0A3A400149623 /* SDWebImageSwiftUI in Frameworks */,
 				648CA826287A6D43000D5B3B /* FirebaseDatabase in Frameworks */,
 				648CA822287A6D43000D5B3B /* FirebaseAnalytics in Frameworks */,
+				58676425288CBE2100667C01 /* MapKit.framework in Frameworks */,
 				648CA824287A6D43000D5B3B /* FirebaseAuth in Frameworks */,
 				648CA82E287AA1DB000D5B3B /* JWTKit in Frameworks */,
+				5877B4A828A0684A00149623 /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +101,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		58676423288CBE2000667C01 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				58676424288CBE2000667C01 /* MapKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		644B7FF1287154E500B8383B = {
 			isa = PBXGroup;
 			children = (
@@ -100,6 +116,7 @@
 				644B800D287154E800B8383B /* storyboardTests */,
 				644B8017287154E800B8383B /* storyboardUITests */,
 				644B7FFB287154E500B8383B /* Products */,
+				58676423288CBE2000667C01 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -117,10 +134,10 @@
 			isa = PBXGroup;
 			children = (
 				6495C30528833A2200A2F4B4 /* storyboard.entitlements */,
-				648CA827287A83D0000D5B3B /* Info.plist */,
 				648CA81E2879D8F9000D5B3B /* GoogleService-Info.plist */,
 				644B7FFD287154E500B8383B /* storyboardApp.swift */,
 				6495C3002880759A00A2F4B4 /* MapView.swift */,
+				58557C94288DF724007C70E6 /* BetterMap.swift */,
 				6495C302288081C200A2F4B4 /* LocationManager.swift */,
 				648CA82F287B33AF000D5B3B /* CreateProfile.swift */,
 				648CA82A287A8AC6000D5B3B /* AuthView.swift */,
@@ -178,6 +195,8 @@
 				648CA823287A6D43000D5B3B /* FirebaseAuth */,
 				648CA825287A6D43000D5B3B /* FirebaseDatabase */,
 				648CA82D287AA1DB000D5B3B /* JWTKit */,
+				5877B4A728A0684A00149623 /* FirebaseStorage */,
+				5877B4AA28A0A3A400149623 /* SDWebImageSwiftUI */,
 			);
 			productName = storyboard;
 			productReference = 644B7FFA287154E500B8383B /* storyboard.app */;
@@ -254,6 +273,8 @@
 			packageReferences = (
 				648CA820287A6D42000D5B3B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				648CA82C287AA1DB000D5B3B /* XCRemoteSwiftPackageReference "jwt-kit" */,
+				5877B4A628A0684A00149623 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				5877B4A928A0A3A400149623 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 			);
 			productRefGroup = 644B7FFB287154E500B8383B /* Products */;
 			projectDirPath = "";
@@ -304,6 +325,7 @@
 				6495C303288081C200A2F4B4 /* LocationManager.swift in Sources */,
 				648CA82B287A8AC6000D5B3B /* AuthView.swift in Sources */,
 				648CA830287B33AF000D5B3B /* CreateProfile.swift in Sources */,
+				58557C95288DF724007C70E6 /* BetterMap.swift in Sources */,
 				6487DE16287F46D5007A8637 /* FriendsPage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -469,6 +491,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = storyboard/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Please allow us to access your location";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Please allow us to access your location";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Please allow us to access your location";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Please allow us to access your location";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -502,6 +528,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = storyboard/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Please allow us to access your location";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Please allow us to access your location";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Please allow us to access your location";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Please allow us to access your location";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -635,6 +665,22 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		5877B4A628A0684A00149623 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+		5877B4A928A0A3A400149623 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageSwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 		648CA820287A6D42000D5B3B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -654,6 +700,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5877B4A728A0684A00149623 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5877B4A628A0684A00149623 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		5877B4AA28A0A3A400149623 /* SDWebImageSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5877B4A928A0A3A400149623 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImageSwiftUI;
+		};
 		648CA821287A6D43000D5B3B /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 648CA820287A6D42000D5B3B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
