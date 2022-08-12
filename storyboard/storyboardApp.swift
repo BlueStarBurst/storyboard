@@ -8,6 +8,7 @@
 import SwiftUI
 import FirebaseCore
 import Firebase
+import FirebaseFirestore
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
@@ -83,6 +84,7 @@ struct storyboardApp: App {
                                 AuthView()
                                     .environmentObject(model)
                                     .onAppear {
+                                        DataHandler.shared.load()
                                         model.checkAuth()
                                     }
                                 if (model.isLoggedIn && model.shouldSkipCreateAcc == "b") {

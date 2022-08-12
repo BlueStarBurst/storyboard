@@ -9,25 +9,24 @@ import SwiftUI
 import UIKit
 import Firebase
 import FirebaseStorage
+import FirebaseCore
+import FirebaseFirestore
 import JWTKit
 
-//class FirebaseManager: NSObject {
-//
-//    let auth: Auth
-//    let storage: Storage
-//
-//    static let shared = FirebaseManager()
-//
-//    override init() {
-//        FirebaseApp.configure()
-//
-//        self.auth = Auth.auth()
-//        self.storage = Storage.storage()
-//
-//        super.init()
-//    }
-//
-//}
+class FirebaseManager: NSObject {
+
+    let db: Firestore
+    let auth: Auth
+
+    static let shared = FirebaseManager()
+
+    override init() {
+        self.db = Firestore.firestore()
+        self.auth = Auth.auth()
+        super.init()
+    }
+
+}
 
 struct ImagePicker: UIViewControllerRepresentable {
 
@@ -83,6 +82,8 @@ class CreateProfileViewModel: ObservableObject {
     
     func checkUser() {
         
+        self.username = self.username.lowercased()
+        
         if (self.username.contains(" ") || self.username.contains("\"") || self.username.contains("'")) {
             self.error = true
             self.errorMsg = "Your username cannot contain any spaces or funny characters (Sorry!)"
@@ -91,46 +92,21 @@ class CreateProfileViewModel: ObservableObject {
             error = false
         }
         
-        let user = Auth.auth().currentUser
-        user?.getIDToken(completion: {(res,err) in
-            if err != nil {
-                print("error :(")
+        
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        FirebaseManager.shared.db.collection("users").whereField("username", isEqualTo: self.username).getDocuments() { (querySnapshot, err) in
+            print(err)
+            if (querySnapshot?.count ?? 1 > 0) {
+                self.nameTaken(decoded: true)
+                return
             } else {
-                Task {
-                    print("tokens!")
-                    
-                    let url = URL(string: "https://storyboard-server.herokuapp.com/doesUserExist")!
-                    var request = URLRequest(url: url)
-                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.setValue(res, forHTTPHeaderField: "AuthToken")
-                    request.httpMethod = "POST"
-                    
-                    guard let encoded = try? JSONEncoder().encode([self.username]) else {
-                        print("oh no")
-                        return
-                    }
-                    
-                    do {
-                        let (data,_) = try await URLSession.shared.upload(for: request, from: encoded)
-                        
-                        guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
-                            print("oh no")
-                            return
-                        }
-                        print(decoded) // CHECK EXISTS
-                        DispatchQueue.main.async {
-                            self.nameTaken(decoded: decoded["exists"] ?? false)
-                        }
-                        
-                    }
-                    catch {
-                        print("failure")
-                    }
-                    //                    task.resume()
-                }
-                
+                self.nameTaken(decoded: false)
+                return
             }
-        })
+            
+        }
+        
     }
     
     func nameTaken(decoded: Bool) {
@@ -149,45 +125,32 @@ class CreateProfileViewModel: ObservableObject {
         guard let uid = user?.uid else {
             return
         }
-        user?.getIDToken(completion: {(res,err) in
-            if err != nil {
-                print("error :(")
+        
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        FirebaseManager.shared.db.collection("users").whereField("username", isEqualTo: self.username).getDocuments() { (querySnapshot, err) in
+            print(err)
+            if (querySnapshot?.count ?? 1 > 0) {
+                self.nameTaken(decoded: true)
             } else {
-                Task {
-                    print("tokens!")
-                    
-                    let url = URL(string: "https://storyboard-server.herokuapp.com/createUser")!
-                    var request = URLRequest(url: url)
-                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.setValue(res, forHTTPHeaderField: "AuthToken")
-                    request.httpMethod = "POST"
-                    
-                    guard let encoded = try? JSONEncoder().encode(["username":self.username,"phone": self.phoneNumber,"fullname":self.fullname,"pfp": "", "id": uid]) else {
-                        print("oh no")
-                        return
-                    }
-                    
-                    do {
-                        let (data,_) = try await URLSession.shared.upload(for: request, from: encoded)
-                        
-                        guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
-                            print("oh no")
-                            return
-                        }
-                        print(decoded) // CHECK EXISTS
-                        DispatchQueue.main.async {
-                            self.isUserCreated(success: decoded["success"] ?? false)
-                        }
-                        
-                    }
-                    catch {
-                        print("failure")
-                    }
-                    //                    task.resume()
-                }
-                
+                self.nameTaken(decoded: false)
+                return
             }
-        })
+            
+        }
+        
+        
+        FirebaseManager.shared.db.collection("users").document(uid).setData([
+            "username":self.username,
+            "phone": self.phoneNumber,
+            "fullname":self.fullname,
+            "pfp": "",
+            "id": uid
+        ])
+        
+        self.isUserCreated(success: true)
+        
+        
         
     }
     
@@ -219,21 +182,11 @@ class CreateProfileViewModel: ObservableObject {
                     return
                 }
                 
-                let user = Auth.auth().currentUser
-                guard let uid = user?.uid else {
-                    return
-                }
                 
-                
-                
-                HTTPHandler().POST(url: "/setPfp", data: ["id": uid, "pfp": url?.absoluteString], completion: { data in
-                    guard let decoded = try? JSONDecoder().decode([String:String].self, from: data) else {
-                        print("Could not decode the data")
-                        return
-                    }
-                    print("AAAAAAAAAAA")
-                    print(decoded)
-                })
+                FirebaseManager.shared.db.collection("users").document(uid).setData([
+                    "pfp": url?.absoluteString
+                ],merge: true)
+            
                 
                 //                    self.loginStatusMessage = "Successfully stored image with url: \(url?.absoluteString ?? "")"
                 print(url?.absoluteString)
@@ -299,7 +252,7 @@ struct CreateProfile: View {
             TextField("User Name", text:$model.username)
                 .focused($focusedField, equals: .myField)
                 .onChange(of: model.username) {
-                    print($0)
+                    let chhange = $0
                     model.checkUser()
                 }
                 .padding(.vertical,20)

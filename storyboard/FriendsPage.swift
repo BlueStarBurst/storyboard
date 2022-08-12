@@ -333,18 +333,18 @@ struct FriendsPage: View {
     var body: some View {
         ZStack{
             VStack {
-                //            Button(action: {try! Auth.auth().signOut()}, label: {
-                //                Text("next")
-                //                    .fontWeight(.bold)
-                //                    .foregroundColor(.white)
-                //                    .padding(.vertical)
-                //                    .frame(maxWidth: .infinity)
-                //                    .background(Color.pink)
-                //                    .cornerRadius(8)
-                //            })
-                //            .padding(.top,10)
-                //            .padding(.bottom,55)
-                //            .padding(.horizontal)
+                            Button(action: {try! Auth.auth().signOut()}, label: {
+                                Text("next")
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                    .padding(.vertical)
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.pink)
+                                    .cornerRadius(8)
+                            })
+                            .padding(.top,10)
+                            .padding(.bottom,55)
+                            .padding(.horizontal)
                 
                 if CurrentUser.name != "" {
                     

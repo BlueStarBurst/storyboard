@@ -83,6 +83,8 @@ class LoginViewModel: ObservableObject {
             
             print("success")
             
+            DataHandler.shared.load()
+            
             self.token()
             
             self.isLoggedIn = true
@@ -97,7 +99,20 @@ class LoginViewModel: ObservableObject {
     
     func token() {
         
-        HTTPHandler().POST(url: "/checkAccount", data: [self.phNumber], completion: self.setShouldSkip)
+        guard let uid = Auth.auth().currentUser?.uid else {
+            return
+        }
+        
+        DataHandler.shared.getUser(id: uid, completionHandler: { data in
+            if (data?["phone"] as! String == self.phNumber) {
+                self.shouldSkipCreateAcc = "a"
+            } else {
+                self.shouldSkipCreateAcc = "b"
+            }
+            self.initializing = false
+        })
+        
+//        HTTPHandler().POST(url: "/checkAccount", data: [self.phNumber], completion: self.setShouldSkip)
         
     }
     
@@ -116,50 +131,15 @@ class LoginViewModel: ObservableObject {
     }
     
     func checkAuth() {
-        
-        let user = Auth.auth().currentUser
-        guard let uid = user?.uid else {
-            self.initializing = false
+        guard let uid = Auth.auth().currentUser?.uid else {
+            self.alreadyAuth(decoded: false)
             return
+            
         }
-        user?.getIDToken(completion: {(res,err) in
-            if err != nil {
-                print("error :(")
-            } else {
-                Task {
-                    print("tokens!")
-                    
-                    let url = URL(string: "https://storyboard-server.herokuapp.com/checkID")!
-                    var request = URLRequest(url: url)
-                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.setValue(res, forHTTPHeaderField: "AuthToken")
-                    request.httpMethod = "POST"
-                    
-                    guard let encoded = try? JSONEncoder().encode([uid]) else {
-                        print("oh no")
-                        return
-                    }
-                    
-                    do {
-                        let (data,_) = try await URLSession.shared.upload(for: request, from: encoded)
-                        
-                        guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
-                            print("oh no")
-                            return
-                        }
-                        print(decoded) // CHECK EXISTS
-                        DispatchQueue.main.async {
-                            self.alreadyAuth(decoded: decoded["exists"] ?? false)
-                        }
-                        
-                    }
-                    catch {
-                        print("failure")
-                    }
-                    //                    task.resume()
-                }
-            }
+        DataHandler.shared.getUser(id: uid, completionHandler: { data in
+            self.alreadyAuth(decoded: true)
         })
+        
     }
     
     func alreadyAuth(decoded: Bool) {
