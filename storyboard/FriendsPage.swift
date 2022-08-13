@@ -147,6 +147,8 @@ class FriendsPageViewModel: ObservableObject {
     
     func getOutgoing() {
         
+//        self.outgoingFriends = DataHandler
+        
         return
         
         let user = Auth.auth().currentUser
@@ -467,10 +469,10 @@ struct FriendsPage: View {
                                 }
                                 .listStyle(PlainListStyle())
                             }
-                            if (model.outgoingFriends.count > 0 && model.outgoingFriends[0]["username"] != nil) {
+                            if (DataHandler.shared.outFriendRequests.count > 0 && DataHandler.shared.outFriendRequests[0]["username"] != nil) {
                                 Text("Outgoing Requests")
                                     .foregroundColor(Color.gray)
-                                ForEach(model.outgoingFriends, id: \.self) { friend in
+                                ForEach(DataHandler.shared.outFriendRequests, id: \.self) { friend in
                                     FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", remove: true, incout: true, update: model.update, image: friend["pfp"])
                                         .padding(.vertical,5)
                                         .padding(.horizontal,25)

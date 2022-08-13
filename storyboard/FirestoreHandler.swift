@@ -19,8 +19,8 @@ class DataHandler: NSObject {
     var currentUser: [String:Any]?
     
     var friends: [[String:Any]]?
-    var incFriendRequests: [[String:Any]]?
-    var outFriendRequests: [[String:Any]]?
+    var incFriendRequests: [[String:String]] = []
+    var outFriendRequests: [[String:String]] = []
     
     var uid: String?
     
@@ -64,7 +64,7 @@ class DataHandler: NSObject {
             }
         }
         
-//        return returnData
+        //        return returnData
     }
     
     func niceString(map: [String:Any]) -> [String:String] {
@@ -82,20 +82,20 @@ class DataHandler: NSObject {
         var returnData: [[String:String]] = []
         
         FirebaseManager.shared.db.collection("users").order(by: "username").start(at: [username.lowercased()]).end(at: [username.lowercased() + String("\u{f8ff}")]).limit(to: 25)
-    
+        
             .getDocuments() { (querySnapshot, err) in
-            print(err)
-            if let err = err {
-                print("Document does not exist")
-                
-            } else {
-                for document in querySnapshot!.documents {
-                    returnData.append(self.niceString(map:document.data()))
+                print(err)
+                if let err = err {
+                    print("Document does not exist")
+                    
+                } else {
+                    for document in querySnapshot!.documents {
+                        returnData.append(self.niceString(map:document.data()))
+                    }
+                    completionHandler(returnData)
                 }
-                completionHandler(returnData)
             }
-        }
-
+        
     }
     
     func getUser(id: String, completionHandler: @escaping ([String:Any]?) -> Void) {
@@ -140,24 +140,62 @@ class DataHandler: NSObject {
     }
     
     func getFriends(handler: [[String:String]]?) {
-        if self.currentUser?["friends"] != nil {
-            let privRef = FirebaseManager.shared.db.collection("users").document(uid).collection("private").document("data")
-            guard case let friends as [String] = self.currentUser?["friends"] else { return }
-            
-            friends.forEach { friendID in
-                
-                self.getUser(id: friendID, completionHandler: { friend in
-                    self.friends?.append([
-                        "username": friend!["username"],
-                        "fullname": friend!["fullname"],
-                        "pfp": friend!["pfp"],
-                        "id": friend!["id"]
-                    ])
-                })
-                
-                
+        if self.currentUser?["display"] != nil {
+            let privRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("friends").getDocuments() { (querySnapshot, err) in
+                if let err = err {
+                    print("Error getting docs")
+                } else {
+                    var friends: [[String:String]] = []
+                    for doc in querySnapshot!.documents {
+                        self.getUser(id: doc.documentID, completionHandler: { map in
+                            friends.append(self.niceString(map: map!))
+                        })
+                    }
+                    self.friends = friends
+                }
             }
-            
         }
+    }
+    
+    func getOutgoing(handler: [[String:String]]?) {
+        if self.currentUser?["display"] != nil {
+            let privRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("outgoingFriends").getDocuments() { (querySnapshot, err) in
+                if let err = err {
+                    print("Error getting docs")
+                } else {
+                    var friends: [[String:String]] = []
+                    for doc in querySnapshot!.documents {
+                        self.getUser(id: doc.documentID, completionHandler: { map in
+                            friends.append(self.niceString(map: map!))
+                        })
+                    }
+                    self.outFriendRequests = friends
+                }
+            }
+        }
+    }
+    
+    func addFriend(id: String, completionhandler: () -> Void) {
+        
+        if (self.uid == nil) {
+            return
+        }
+        
+        let newDocRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("outgoingFriends").document(id)
+            
+        getUser(id: id, completionHandler: { data in
+            try? newDocRef.setData([
+                "username":data!["username"],
+                "display": data!["display"],
+                "fullname":data!["fullname"],
+                "pfp": data!["pfp"]
+            ]) { error in
+                if error != nil {
+                    return
+                }
+            }
+        })
+        
+        
     }
 }
