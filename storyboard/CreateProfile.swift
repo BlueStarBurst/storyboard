@@ -82,8 +82,6 @@ class CreateProfileViewModel: ObservableObject {
     
     func checkUser() {
         
-        self.username = self.username.lowercased()
-        
         if (self.username.contains(" ") || self.username.contains("\"") || self.username.contains("'")) {
             self.error = true
             self.errorMsg = "Your username cannot contain any spaces or funny characters (Sorry!)"
@@ -140,24 +138,50 @@ class CreateProfileViewModel: ObservableObject {
         }
         
         
-        FirebaseManager.shared.db.collection("users").document(uid).setData([
-            "username":self.username,
-            "phone": self.phoneNumber,
+        let newDocRef = FirebaseManager.shared.db.collection("users").document(uid)
+            
+        try? newDocRef.setData([
+            "username":self.username.lowercased(),
+            "display": self.username,
             "fullname":self.fullname,
             "pfp": "",
             "id": uid
-        ])
+        ]) { error in
+            if error != nil {
+                return
+            }
+            
+            let privRef = FirebaseManager.shared.db.collection("users").document(uid).collection("private").document("data")
+            
+//            FirebaseManager.shared.db.collection("users").document(uid).collection("friends").document("friends")
+//            FirebaseManager.shared.db.collection("users").document(uid).collection("incomingFriends").document("incomingFriends")
+//            FirebaseManager.shared.db.collection("users").document(uid).collection("outgoingFriends").document("outgoingFriends")
+            
+            try? privRef.setData([
+                "phone": self.phoneNumber
+            ]) { error in
+                if error != nil {
+                    return
+                }
+                
+            }
+        }
         
-        self.isUserCreated(success: true)
+        DataHandler.shared.load(onComplete: {
+            self.persistImageToStorage()
+            if (self.image == nil) {
+                self.isUserCreated(success: true)
+            }
+            
+        })
+        
+        
         
         
         
     }
     
     func isUserCreated(success: Bool) {
-        if success == true {
-            persistImageToStorage()
-        }
         self.finished = success
     }
     
@@ -167,18 +191,22 @@ class CreateProfileViewModel: ObservableObject {
     
     private func persistImageToStorage() {
         print("PERSIST")
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let uid = Auth.auth().currentUser?.uid else { self.isUserCreated(success: true)
+            return }
         let ref = Storage.storage().reference(withPath: uid)
-        guard let imageData = self.image?.jpegData(compressionQuality: 0.5) else { return }
+        guard let imageData = self.image?.jpegData(compressionQuality: 0.5) else { self.isUserCreated(success: true)
+            return }
         ref.putData(imageData, metadata: nil) { metadata, err in
             if let err = err {
                 print("Failed to push image to Storage: \(err)")
+                self.isUserCreated(success: true)
                 return
             }
             
             ref.downloadURL { url, err in
                 if let err = err {
                     print("Failed to retrieve downloadURL: \(err)")
+                    self.isUserCreated(success: true)
                     return
                 }
                 
@@ -189,6 +217,10 @@ class CreateProfileViewModel: ObservableObject {
             
                 
                 //                    self.loginStatusMessage = "Successfully stored image with url: \(url?.absoluteString ?? "")"
+                DataHandler.shared.load(onComplete: {
+                    self.isUserCreated(success: true)
+                })
+                
                 print(url?.absoluteString)
             }
         }

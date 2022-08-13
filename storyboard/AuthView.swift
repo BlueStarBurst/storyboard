@@ -104,11 +104,17 @@ class LoginViewModel: ObservableObject {
         }
         
         DataHandler.shared.getUser(id: uid, completionHandler: { data in
-            if (data?["phone"] as! String == self.phNumber) {
-                self.shouldSkipCreateAcc = "a"
-            } else {
+            if (data == nil) {
                 self.shouldSkipCreateAcc = "b"
+            } else {
+                self.shouldSkipCreateAcc = "a"
             }
+//            print("ABABABABAB")
+//            if (data?["username"] as! String == self.phNumber) {
+//                self.shouldSkipCreateAcc = "a"
+//            } else {
+//                self.shouldSkipCreateAcc = "b"
+//            }
             self.initializing = false
         })
         
@@ -134,10 +140,14 @@ class LoginViewModel: ObservableObject {
         guard let uid = Auth.auth().currentUser?.uid else {
             self.alreadyAuth(decoded: false)
             return
-            
         }
         DataHandler.shared.getUser(id: uid, completionHandler: { data in
-            self.alreadyAuth(decoded: true)
+            print(data)
+            if data == nil {
+                self.alreadyAuth(decoded: false)
+            } else {
+                self.alreadyAuth(decoded: true)
+            }            
         })
         
     }

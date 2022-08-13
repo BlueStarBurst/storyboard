@@ -84,7 +84,7 @@ struct storyboardApp: App {
                                 AuthView()
                                     .environmentObject(model)
                                     .onAppear {
-                                        DataHandler.shared.load()
+                                        print("a")
                                         model.checkAuth()
                                     }
                                 if (model.isLoggedIn && model.shouldSkipCreateAcc == "b") {
