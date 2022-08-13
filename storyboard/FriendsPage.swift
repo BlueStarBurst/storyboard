@@ -25,9 +25,11 @@ class FriendsPageViewModel: ObservableObject {
     @Published var errorMsg: String = ""
     @Published var isSearching: Bool = false
     
-    @Published var friends: [[String: String]] = [[:]]
-    @Published var incomingFriends: [[String: String]] = [[:]]
-    @Published var outgoingFriends: [[String: String]] = [[:]]
+    @Published var reload: Bool = false
+    
+    @Published var friends: [[String: String]] = DataHandler.shared.friends
+    @Published var incomingFriends: [[String: String]] = DataHandler.shared.incFriendRequests
+    @Published var outgoingFriends: [[String: String]] = DataHandler.shared.outFriendRequests
     @Published var searchResults: [[String: String]] = [[:]]
     
     func checkUser() {
@@ -55,121 +57,28 @@ class FriendsPageViewModel: ObservableObject {
     }
     
     func requestFriend(username: String) {
+        self.searchResults = [[:]]
+        self.searchUser = ""
+        self.isSearching = false
         
+        DataHandler.shared.addFriend(username: username, completionhandler: {
+            self.reload = false
+            print("ADDED FRIEND")
+        })
         
 //        let privRef = FirebaseManager.shared.db.collection("users").document(uid).collection("private").document("data")
-        
-        
-        let user = Auth.auth().currentUser
-        guard let uid = user?.uid else {
-            return
-        }
-        
-        HTTPHandler().POST(url: "/addFriend", data: ["username": username, "id": uid]) { data in
-            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
+
             
-            if (decoded["success"]!) {
-                print("SUCCESS")
-                self.searchResults = [[:]]
-                self.searchUser = ""
-                self.isSearching = false
-                self.getIncoming()
-                self.getOutgoing()
-                
-            } else {
-                print("FAIL")
-                self.searchResults = [[:]]
-                self.searchUser = ""
-                self.isSearching = false
-                
-                
-            }
-            
-        }
-    }
-    
-    func getFriends() {
         
-        
-        return
-        
-        let user = Auth.auth().currentUser
-        guard let uid = user?.uid else {
-            return
-        }
-        
-        try HTTPHandler().POST(url: "/getSelf", data: ["id": uid], completion: { data in
-            guard let decoded = try? JSONDecoder().decode([String: [String:String]].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
-            let user = decoded["user"]!
-            
-            CurrentUser.user = user["username"]!
-            CurrentUser.name = user["fullname"]!
-            CurrentUser.pfp = user["pfp"]!
-            
-            print(decoded)
-        })
-        
-        
-        HTTPHandler().POST(url: "/getFriends", data: ["id": uid], completion: { data in
-            guard let decoded = try? JSONDecoder().decode([String: [[String:String]]].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
-            self.friends = decoded["friends"]!
-            print(decoded)
-        })
-    }
-    
-    func getIncoming() {
-        
-        return
-        
-        let user = Auth.auth().currentUser
-        guard let uid = user?.uid else {
-            return
-        }
-        
-        HTTPHandler().POST(url: "/getIncomingFriends", data: ["id": uid], completion: { data in
-            guard let decoded = try? JSONDecoder().decode([String: [[String:String]]].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
-            self.incomingFriends = decoded["friends"]!
-            print(decoded)
-        })
-    }
-    
-    func getOutgoing() {
-        
-//        self.outgoingFriends = DataHandler
-        
-        return
-        
-        let user = Auth.auth().currentUser
-        guard let uid = user?.uid else {
-            return
-        }
-        
-        HTTPHandler().POST(url: "/getOutgoingFriends", data: ["id": uid], completion: { data in
-            guard let decoded = try? JSONDecoder().decode([String: [[String:String]]].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
-            self.outgoingFriends = decoded["friends"]!
-            print(decoded)
-        })
     }
     
     func update() {
-        getOutgoing()
-        getIncoming()
-        getFriends()
+        withAnimation {
+            self.friends = DataHandler.shared.friends
+            self.incomingFriends = DataHandler.shared.incFriendRequests
+            self.outgoingFriends = DataHandler.shared.outFriendRequests
+        }
+        
     }
     
 }
@@ -199,6 +108,7 @@ struct FriendLabel: View {
     var selectable = false
     @State var selected = false
     var update: () -> Void = {}
+    var onBeforeRemove: () -> Void = {}
     
     let disabled: Bool = false
     
@@ -247,20 +157,11 @@ struct FriendLabel: View {
                             return
                         }
                         
-                        HTTPHandler().POST(url: "/addFriend", data: ["username": self.username, "id": uid]) { data in
-                            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
-                                print("Could not decode the data")
-                                return
-                            }
-                            
-                            if (decoded["success"]!) {
-                                print("SUCCESS")
-                                update()
-                            } else {
-                                print("FAIL")
-                            }
-                            
-                        }
+                        DataHandler.shared.addFriend(username: self.username, completionhandler: {
+                            print("SUCCESS")
+                        })
+                        
+                        
                     }
             }
             
@@ -287,25 +188,15 @@ struct FriendLabel: View {
                             return
                             
                         }
-                        let user = Auth.auth().currentUser
-                        guard let uid = user?.uid else {
-                            return
-                        }
                         
-                        HTTPHandler().POST(url: (incout) ? "/removeIncOutFriend" : "/removeFriend", data: ["username": self.username, "id": uid]) { data in
-                            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
-                                print("Could not decode the data")
-                                return
-                            }
-                            
-                            if (decoded["success"]!) {
-                                print("SUCCESS")
-                                update()
-                            } else {
-                                print("FAIL")
-                            }
-                            
-                        }
+                        onBeforeRemove()
+                        
+                        DataHandler.shared.removeOutFriend(username: self.username, completionHandler: {
+                            print("remove Data")
+                            update()
+                        })
+                        
+                        
                     }
             }
         }
@@ -339,6 +230,8 @@ struct FriendsPage: View {
     
     @State var load = false
     
+    @State var reload = true
+    
     @ObservedObject var keyboardResponder = KeyboardResponder()
     
     @State private var requestPage = false
@@ -347,18 +240,18 @@ struct FriendsPage: View {
     var body: some View {
         ZStack{
             VStack {
-                Button(action: {try! Auth.auth().signOut()}, label: {
-                    Text("next")
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(.vertical)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.pink)
-                        .cornerRadius(8)
-                })
-                .padding(.top,10)
-                .padding(.bottom,55)
-                .padding(.horizontal)
+//                Button(action: {try! Auth.auth().signOut()}, label: {
+//                    Text("sign out")
+//                        .fontWeight(.bold)
+//                        .foregroundColor(.white)
+//                        .padding(.vertical)
+//                        .frame(maxWidth: .infinity)
+//                        .background(Color.pink)
+//                        .cornerRadius(8)
+//                })
+//                .padding(.top,10)
+//                .padding(.bottom,10)
+//                .padding(.horizontal)
                 
                 if DataHandler.shared.currentUser != nil && DataHandler.shared.currentUser!["display"] as! String != "" {
                     
@@ -469,11 +362,12 @@ struct FriendsPage: View {
                                 }
                                 .listStyle(PlainListStyle())
                             }
-                            if (DataHandler.shared.outFriendRequests.count > 0 && DataHandler.shared.outFriendRequests[0]["username"] != nil) {
+                            if (model.outgoingFriends.count > 0 && model.outgoingFriends[0]["username"] != nil) {
+                            
                                 Text("Outgoing Requests")
                                     .foregroundColor(Color.gray)
-                                ForEach(DataHandler.shared.outFriendRequests, id: \.self) { friend in
-                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", remove: true, incout: true, update: model.update, image: friend["pfp"])
+                                ForEach(model.outgoingFriends, id: \.self) { friend in
+                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", remove: true, incout: true, update: model.update, onBeforeRemove: {model.reload = true}, image: friend["pfp"])
                                         .padding(.vertical,5)
                                         .padding(.horizontal,25)
                                         .listRowBackground(Color.black)
@@ -491,9 +385,8 @@ struct FriendsPage: View {
                 Spacer()
             }
             .onAppear {
-                model.getFriends()
-                model.getIncoming()
-                model.getOutgoing()
+                DataHandler.shared.friendPageUpdate = model.update
+                model.update()
             }
             
             
@@ -587,6 +480,11 @@ struct FriendsPage: View {
                 .cornerRadius(8)
                 //                .offset(y: -keyboardResponder.currentHeight*0.9)
                 .transition(.move(edge: .bottom))
+                .onAppear {
+                    withAnimation{
+                        model.reload = true
+                    }
+                }
                 
             }
             

@@ -9,7 +9,11 @@ import SwiftUI
 import Firebase
 import JWTKit
 
-
+extension StringProtocol {
+    subscript(offset: Int) -> String {
+        String(self[index(startIndex, offsetBy: offset)])
+    }
+}
 
 class LoginViewModel: ObservableObject {
     @Published var countryCode = ""
@@ -34,7 +38,10 @@ class LoginViewModel: ObservableObject {
         //undo later
         Auth.auth().settings?.isAppVerificationDisabledForTesting = true // false
         
-        PhoneAuthProvider.provider().verifyPhoneNumber("+\(countryCode + phNumber)",uiDelegate: nil) {
+        let realC = self.countryCode.filter { $0 != "+" }
+        let realP = self.phNumber.filter { $0 != "(" && $0 != "-" && $0 != ")" }
+        
+        PhoneAuthProvider.provider().verifyPhoneNumber("+\(realC + realP)",uiDelegate: nil) {
             ID, err in
             if let error = err{
                 self.errorMsg = error.localizedDescription
@@ -177,6 +184,12 @@ struct PayLoad: JWTPayload,Equatable {
 
 
 struct AuthView: View {
+    private enum Field: Int, Hashable {
+        case verification
+    }
+    
+    @FocusState private var focusedField: Field?
+    
     @EnvironmentObject var model : LoginViewModel
     var body: some View {
         ZStack {
@@ -185,6 +198,14 @@ struct AuthView: View {
                 Text("Enter your phone number to get started!")
                 HStack(spacing: 15) {
                     TextField("+1", text:$model.countryCode)
+                        .onChange(of: model.countryCode) { name in
+                            if (name == "+") {
+                                model.countryCode = ""
+                            }
+                            if (name.count == 1 && name != "+") {
+                                model.countryCode = "+" + name
+                            }
+                        }
                         .keyboardType(.numberPad)
                         .padding(.vertical,12)
                         .padding(.horizontal)
@@ -197,6 +218,33 @@ struct AuthView: View {
                         )
                     
                     TextField("(650)-555-1234", text:$model.phNumber)
+                        .onChange(of: model.phNumber) { name in
+                            if (name == "(") {
+                                model.phNumber = ""
+                            }
+                            if (name.count == 1 && name != "(") {
+                                model.phNumber = "(" + name
+                            }
+                            if (name.count < 4) {
+                                model.phNumber = model.phNumber.filter { $0 != ")"}
+                            }
+                            if (name.count == 5) {
+                                model.phNumber = model.phNumber.prefix(4) + ")-" + model.phNumber.suffix(1)
+//                                model.phNumber = model.phNumber.filter { $0 != ")"}
+                            }
+                            if (name.count == 6) {
+                                model.phNumber = model.phNumber.filter { $0 != ")" && $0 != "-" }
+                            }
+                            
+                            if (name.count == 10) {
+                                model.phNumber = model.phNumber.prefix(9) + "-" + model.phNumber.suffix(1)
+                            }
+                            
+                            if (name.count == 10 && name[9] == "-") {
+                                model.phNumber = model.phNumber.prefix(9) + ""
+                            }
+                            
+                        }
                         .keyboardType(.numberPad)
                         .padding(.vertical,12)
                         .padding(.horizontal)
@@ -235,6 +283,14 @@ struct AuthView: View {
             HStack {
                 Spacer()
                 VStack {
+                    HStack {
+                        Image(systemName: "chevron.backward").onTapGesture {
+                            withAnimation {
+                                model.verifyScreen = false
+                            }
+                        }
+                        Spacer()
+                    }
                     Spacer()
                     Text("You 'should' be recieving a six-digit verification code via text")
                         .padding(.bottom, 12)
@@ -254,6 +310,10 @@ struct AuthView: View {
                                             Color.pink,lineWidth: 1.5
                                        )
                         )
+                        .focused($focusedField, equals: .verification)
+                        .onAppear {
+                            focusedField = .verification
+                        }
                     Button(action: model.LoginUser, label: {
                         Text("verify")
                             .fontWeight(.bold)
@@ -269,7 +329,7 @@ struct AuthView: View {
                     .padding(.bottom, 40)
                     Spacer()
                     
-                }.padding(.horizontal, 40)
+                }.padding(.horizontal, 20)
                 Spacer()
             }
             .background(Color.black)

@@ -45,11 +45,13 @@ class CreateEventModel: ObservableObject {
     @Published var newPin = MapPin(coordinate: CLLocationCoordinate2D(latitude: 0,
                                                                       longitude: 0), title: "tempPin")
     
-    @Published var friends: [[String: String]] = [[:]]
+    @Published var friends: [[String: String]] = []
     @Published var searchText: String = ""
     
-    @Published var events: [[String:String]] = [[:]]
-    @Published var incomingEvents: [[String:String]] = [[:]]
+    @Published var events: [[String:Any]] = []
+    @Published var eventsString: [[String:String]] = []
+    @Published var incomingEvents: [[String:Any]] = []
+    @Published var incomingEventsString: [[String:String]] = []
     
     @Published var invitedFriends: [String] = []
     
@@ -67,22 +69,6 @@ class CreateEventModel: ObservableObject {
                 )
             )
         }
-    }
-    
-    func getFriends() {
-        let user = Auth.auth().currentUser
-        guard let uid = user?.uid else {
-            return
-        }
-        
-        HTTPHandler().POST(url: "/getFriends", data: ["id": uid], completion: { data in
-            guard let decoded = try? JSONDecoder().decode([String: [[String:String]]].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
-            self.friends = decoded["friends"]!
-            print(decoded)
-        })
     }
     
     func stringFriends() -> String {
@@ -110,6 +96,11 @@ class CreateEventModel: ObservableObject {
         
         print(formatted)
         
+        DataHandler.shared.createEvent(data: ["name": self.name, "address": self.address, "invited": self.invitedFriends, "date": formatted, "coords": encodeLocation(loc: newPin.coordinate)], completionHandler: {
+            print("WORKS")
+        })
+        
+        
         HTTPHandler().POST(url: "/createEvent", data: ["name": self.name, "address": self.address, "invited": self.invitedFriends, "date": formatted, "coords": encodeLocation(loc: newPin.coordinate), "id": uid]) { data in
             guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
                 print("Could not decode the data")
@@ -118,7 +109,7 @@ class CreateEventModel: ObservableObject {
             
             if (decoded["success"]!) {
                 print("SUCCESS")
-                self.getEvents()
+                self.update()
             } else {
                 print("FAIL")
             }
@@ -135,39 +126,32 @@ class CreateEventModel: ObservableObject {
         return CLLocationCoordinate2D(latitude: Double(comp[1]) ?? 0.0, longitude: Double(comp[0]) ?? 0.0)
     }
     
-    func getEvents() {
-        let user = Auth.auth().currentUser
-        guard let uid = user?.uid else {
-            return
+    func update() {
+        self.events = []
+        self.eventsString = []
+        DataHandler.shared.events.values.forEach { event in
+            self.events.append(event)
+            self.eventsString.append([
+                "name": event["name"] as! String,
+                "coords": event["coords"] as! String,
+            ])
         }
         
-        HTTPHandler().POST(url: "/getEvents", data: ["id": uid], completion: { data in
-            print(data)
-            guard let decoded = try? JSONDecoder().decode([String: [[String:String]]].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
-            self.events = decoded["events"]!
-            self.translatePins()
-            print(decoded)
-        })
+        self.incomingEvents = []
+        self.incomingEventsString = []
+        DataHandler.shared.incomingEvents.values.forEach { event in
+            self.incomingEvents.append(event)
+            self.incomingEventsString.append([
+                "name": event["name"] as! String,
+                "coords": event["coords"] as! String,
+            ])
+        }
+        
+        self.translatePins()
+        self.friends = DataHandler.shared.friends
+//        self.incomingEvents = DataHandler.shared.incomingEvents
     }
     
-    func getIncoming() {
-        let user = Auth.auth().currentUser
-        guard let uid = user?.uid else {
-            return
-        }
-        
-        HTTPHandler().POST(url: "/getIncomingEvents", data: ["id": uid], completion: { data in
-            guard let decoded = try? JSONDecoder().decode([String: [[String:String]]].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
-            self.incomingEvents = decoded["events"]!
-            self.translatePins()
-        })
-    }
     
     func translatePins() {
         for event in events {
@@ -175,20 +159,20 @@ class CreateEventModel: ObservableObject {
                 break
             }
             self.pins.append(
-                MapPin(coordinate: decodeLocation(str: event["coords"]!), title: event["name"] ?? "", action: {print("PIN")})
+                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {print("PIN")})
             )
             
-            real_pins.append(Pin(name: event["name"] ?? "", coordinate: decodeLocation(str: event["coords"]!)))
+            real_pins.append(Pin(name: (event["name"] as! String ) , coordinate: decodeLocation(str: event["coords"]! as! String)))
         }
         for event in incomingEvents {
             if (event["name"] == nil) {
                 break
             }
             self.pins.append(
-                MapPin(coordinate: decodeLocation(str: event["coords"]!), title: event["name"] ?? "", action: {print("PIN")})
+                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {print("PIN")})
             )
             
-            real_pins.append(Pin(name: event["name"] ?? "", coordinate: decodeLocation(str: event["coords"]!)))
+            real_pins.append(Pin(name: (event["name"] as! String ) , coordinate: decodeLocation(str: event["coords"]! as! String)))
         }
         
     }
@@ -320,8 +304,8 @@ struct MapView: View {
             
             CustomMap(annotations: $model.pins,interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin, oldPin: $oldPin)
                 .onAppear {
-                    model.getEvents()
-                    model.getIncoming()
+                    model.update()
+                    DataHandler.shared.eventPageUpdate = model.update
                 }
                 .onTapGesture {
                     withAnimation {
@@ -348,13 +332,14 @@ struct MapView: View {
                         
                         
                         ScrollView {
-                            ForEach (model.events, id: \.self) { event in
+                            ForEach (model.eventsString, id: \.self) { event in
                                 EventTab(event: event)
                                     .frame(maxWidth: .infinity)
                                     .padding(.bottom, 15)
                             }
-                            Text("Pending Events")
-                            ForEach (model.incomingEvents, id: \.self) { event in
+                            
+                            Text("Incoming Events").padding(.bottom, 18)
+                            ForEach (model.incomingEventsString, id: \.self) { event in
                                 EventTab(event: event)
                                     .frame(maxWidth: .infinity)
                                     .padding(.bottom, 18)
@@ -488,7 +473,7 @@ struct MapView: View {
                                     .padding(.bottom,5)
                                     .font(.system(size: 25))
                                     .onAppear {
-                                        model.getFriends()
+                                        model.update()
                                     }
                                 
                                 TextField("Friend Name", text: $model.searchText)
