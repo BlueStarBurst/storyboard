@@ -18,6 +18,8 @@ class DataHandler: NSObject, ObservableObject {
     
     var currentUser: [String:Any]?
     
+    var isMessageView = false
+    
     @Published var friends: [[String:String]] = []
     @Published var incFriendRequests: [[String:String]] = []
     @Published var outFriendRequests: [[String:String]] = []
@@ -35,6 +37,7 @@ class DataHandler: NSObject, ObservableObject {
     
     var eventPageUpdate : () -> Void = {}
     var friendPageUpdate : () -> Void = {}
+    var updateMessage: () -> Void = {}
     
     func callAllUpdates() {
         self.eventPageUpdate()
@@ -60,6 +63,16 @@ class DataHandler: NSObject, ObservableObject {
             //            self.getOutgoing()
             self.setupListeners()
         })
+    }
+    
+    func showMessages() {
+        self.isMessageView = true
+        self.updateMessage()
+    }
+    
+    func hideMessages() {
+        self.isMessageView = false
+        self.updateMessage()
     }
     
     func setupListeners() {

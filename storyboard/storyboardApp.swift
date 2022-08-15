@@ -73,6 +73,7 @@ struct storyboardApp: App {
     @State var page = 0
     
     @State var fullApp = false
+    @State var isMessageView = true
     
     var body: some Scene {
         WindowGroup {
@@ -142,9 +143,19 @@ struct storyboardApp: App {
                 }
                 
             } else {
-                ContentView()
-                    .accentColor(.white)
-                    .preferredColorScheme(.dark)
+                ZStack {
+                    ContentView()
+                        .accentColor(.white)
+                        .preferredColorScheme(.dark)
+                        .onAppear {
+                            DataHandler.shared.updateMessage = {
+                                isMessageView = DataHandler.shared.isMessageView
+                            }
+                        }
+                    if (isMessageView == true) {
+                        MessageView()
+                    }
+                }
             }
         }
         .onChange(of: phase) { _ in

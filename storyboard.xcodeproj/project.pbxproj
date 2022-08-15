@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		58557C95288DF724007C70E6 /* BetterMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58557C94288DF724007C70E6 /* BetterMap.swift */; };
 		58676425288CBE2100667C01 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58676424288CBE2000667C01 /* MapKit.framework */; };
+		587313DE28A9A17100F945CD /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 587313DD28A9A17100F945CD /* MessageView.swift */; };
 		5876E04E28A557A4004E5332 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 5876E04D28A557A4004E5332 /* FirebaseFirestore */; };
 		5876E05028A5770E004E5332 /* FirestoreHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5876E04F28A5770E004E5332 /* FirestoreHandler.swift */; };
 		5877B4A828A0684A00149623 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 5877B4A728A0684A00149623 /* FirebaseStorage */; };
@@ -52,6 +53,7 @@
 /* Begin PBXFileReference section */
 		58557C94288DF724007C70E6 /* BetterMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterMap.swift; sourceTree = "<group>"; };
 		58676424288CBE2000667C01 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		587313DD28A9A17100F945CD /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
 		5876E04F28A5770E004E5332 /* FirestoreHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreHandler.swift; sourceTree = "<group>"; };
 		644B7FFA287154E500B8383B /* storyboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = storyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		644B7FFD287154E500B8383B /* storyboardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = storyboardApp.swift; sourceTree = "<group>"; };
@@ -141,6 +143,7 @@
 				648CA81E2879D8F9000D5B3B /* GoogleService-Info.plist */,
 				644B7FFD287154E500B8383B /* storyboardApp.swift */,
 				6495C3002880759A00A2F4B4 /* MapView.swift */,
+				587313DD28A9A17100F945CD /* MessageView.swift */,
 				58557C94288DF724007C70E6 /* BetterMap.swift */,
 				6495C302288081C200A2F4B4 /* LocationManager.swift */,
 				648CA82F287B33AF000D5B3B /* CreateProfile.swift */,
@@ -330,6 +333,7 @@
 				6495C3012880759A00A2F4B4 /* MapView.swift in Sources */,
 				644B7FFE287154E500B8383B /* storyboardApp.swift in Sources */,
 				6495C303288081C200A2F4B4 /* LocationManager.swift in Sources */,
+				587313DE28A9A17100F945CD /* MessageView.swift in Sources */,
 				648CA82B287A8AC6000D5B3B /* AuthView.swift in Sources */,
 				648CA830287B33AF000D5B3B /* CreateProfile.swift in Sources */,
 				58557C95288DF724007C70E6 /* BetterMap.swift in Sources */,
