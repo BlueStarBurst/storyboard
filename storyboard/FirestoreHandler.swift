@@ -13,12 +13,34 @@ import FirebaseCore
 import FirebaseFirestore
 import JWTKit
 
+struct ChatMessage: Identifiable {
+    var id: String { documentId }
+    
+    let documentId: String
+    let fromId, text: String
+    let name: String
+    
+    init(documentId: String, data: [String: Any]) {
+        self.documentId = documentId
+        self.fromId = data["fromId"] as? String ?? ""
+        self.text = data["text"] as? String ?? ""
+        self.name = data["name"] as? String ?? ""
+    }
+}
+
 
 class DataHandler: NSObject, ObservableObject {
     
     var currentUser: [String:Any]?
+    var currentEvent: String?
+    
+    var chatMessages = [ChatMessage]()
+    
+    var currentChatName: String = ""
     
     var isMessageView = false
+    
+    var isFriendMessage = false
     
     @Published var friends: [[String:String]] = []
     @Published var incFriendRequests: [[String:String]] = []
@@ -27,17 +49,19 @@ class DataHandler: NSObject, ObservableObject {
     var events: [String:[String:Any]] = [:]
     var incomingEvents: [String:[String:Any]] = [:]
     
-    var outListener: Any?
-    var incListener: Any?
-    var friendListener: Any?
-    var eventsListener: Any?
-    var incEventsListener: Any?
+    var outListener: ListenerRegistration?
+    var incListener: ListenerRegistration?
+    var friendListener: ListenerRegistration?
+    var eventsListener: ListenerRegistration?
+    var incEventsListener: ListenerRegistration?
+    var chatListener: ListenerRegistration?
     
     var uid: String?
     
     var eventPageUpdate : () -> Void = {}
     var friendPageUpdate : () -> Void = {}
     var updateMessage: () -> Void = {}
+    var messageViewUpdate: () -> Void = {}
     
     func callAllUpdates() {
         self.eventPageUpdate()
@@ -530,4 +554,176 @@ class DataHandler: NSObject, ObservableObject {
             }
         }
     }
+    
+    func sendMessage(message: String) {
+        
+        if self.isFriendMessage == true {
+            sendFriendMessage(message: message)
+            return
+        }
+        
+        if self.currentEvent == nil {
+            return
+        }
+        let doc = FirebaseManager.shared.db.collection("events")
+            .document(currentEvent!)
+            .collection("messages")
+            .document()
+        
+        let messageData = ["fromId": self.uid, "text": message, "timestamp": Timestamp(), "name": self.currentUser?["fullname"] ?? ""] as [String:Any]
+        
+        doc.setData(messageData) { error in
+            if let error = error {
+                print(error)
+                return
+            }
+            
+            print("successfully saved message")
+        }
+    }
+    
+    func openEventChat(id: String?) {
+        
+        self.isFriendMessage = false
+        
+        if id == nil {
+            return
+        }
+
+        self.currentEvent = id
+
+        self.currentChatName = self.events[id!]?["name"] as! String
+        
+        self.getMessages()
+        self.showMessages()
+        
+    }
+    
+    func openIncomingEventChat(id: String?) {
+        
+        self.isFriendMessage = false
+        
+        if id == nil {
+            return
+        }
+
+        self.currentEvent = id
+
+        self.currentChatName = self.incomingEvents[id!]?["name"] as! String
+        
+        self.getMessages()
+        self.showMessages()
+        
+    }
+    
+    func openFriendChat(id: String?, name: String?) {
+        
+        self.isFriendMessage = true
+        
+        if id == nil {
+            return
+        }
+
+        self.currentEvent = id
+
+        self.currentChatName = name ?? ""
+        
+        self.getFriendMessages()
+        self.showMessages()
+    }
+    
+    func getMessages() {
+        
+        if (chatListener != nil) {
+            chatListener?.remove()
+        }
+        
+        self.chatMessages = []
+        self.chatListener = FirebaseManager.shared.db
+            .collection("events")
+            .document(self.currentEvent ?? "")
+            .collection("messages")
+            .order(by: "timestamp")
+            .addSnapshotListener {querySnapshot, error in
+                if let error = error {
+                    print(error)
+                }
+                
+                querySnapshot?.documentChanges.forEach( {change in
+                    if change.type == .added {
+                        let data = change.document.data()
+                        self.chatMessages.append(.init(documentId: change.document.documentID, data: data))
+                        self.messageViewUpdate()
+                    }
+                })
+            }
+    }
+    
+    func getFriendMessages() {
+        if (chatListener != nil) {
+            chatListener?.remove()
+        }
+        
+        self.chatMessages = []
+        self.chatListener = FirebaseManager.shared.db
+            .collection("users")
+            .document(self.uid ?? "")
+            .collection("messages")
+            .document("messages")
+            .collection(self.currentEvent ?? "")
+            .order(by: "timestamp")
+            .addSnapshotListener {querySnapshot, error in
+                if let error = error {
+                    print(error)
+                }
+                
+                querySnapshot?.documentChanges.forEach( {change in
+                    if change.type == .added {
+                        let data = change.document.data()
+                        self.chatMessages.append(.init(documentId: change.document.documentID, data: data))
+                        self.messageViewUpdate()
+                    }
+                })
+            }
+    }
+    
+    func sendFriendMessage(message: String) {
+        if self.currentEvent == nil {
+            return
+        }
+        let doc = FirebaseManager.shared.db.collection("users")
+            .document(self.uid ?? "")
+            .collection("messages")
+            .document("messages")
+            .collection(self.currentEvent!)
+            .document()
+        
+        let docF = FirebaseManager.shared.db.collection("users")
+            .document(self.currentEvent!)
+            .collection("messages")
+            .document("messages")
+            .collection(self.uid ?? "")
+            .document()
+        
+        let messageData = ["fromId": self.uid, "text": message, "timestamp": Timestamp(), "name": self.currentUser?["fullname"] ?? ""] as [String:Any]
+        
+        doc.setData(messageData) { error in
+            if let error = error {
+                print(error)
+                return
+            }
+            
+            print("successfully saved message")
+        }
+        
+        docF.setData(messageData) { error in
+            if let error = error {
+                print(error)
+                return
+            }
+            
+            print("successfully saved friend message")
+        }
+    }
+    
 }

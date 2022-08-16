@@ -58,6 +58,7 @@ class MapViewCoordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelega
         
         self.mapViewController = control
         super.init()
+        self.mapViewController.onStart = true
         self.gRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(tapHandler))
         self.gRecognizer.delegate = self
         self.mapViewController.mapView.addGestureRecognizer(gRecognizer)
@@ -119,6 +120,14 @@ class MapViewCoordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelega
     @objc func handleTap(_ sender: UITapGestureRecognizer) {
         print("hi")
     }
+    
+//    func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+//        print(mapView)
+//    }
+    
+    func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
+        print("WILL CHANGE")
+    }
 }
 
 
@@ -141,6 +150,10 @@ struct CustomMap: UIViewRepresentable {
     
     @Binding var oldPin: MapPin?
     
+    @Binding var onStart: Bool
+    
+    @Binding var saveCoords: CLLocationCoordinate2D
+    
     let mapView = MKMapView(frame: .zero)
     
     func coordsToLoc(coords: CLLocationCoordinate2D) -> CLLocation {
@@ -161,30 +174,38 @@ struct CustomMap: UIViewRepresentable {
         manager.startUpdatingLocation()
 
         mapView.showsUserLocation = true
-        guard let coordinate = mapView.userLocation.location?.coordinate else { return mapView }
-        let region = mapView.regionThatFits(MKCoordinateRegion(center: coordinate, latitudinalMeters: 200, longitudinalMeters: 200))
-        mapView.setRegion(region, animated: true)
+        if (onStart == false) {
+            guard let coordinate = mapView.userLocation.location?.coordinate else { return mapView }
+            let region = mapView.regionThatFits(MKCoordinateRegion(center: coordinate, latitudinalMeters: 200, longitudinalMeters: 200))
+            mapView.setRegion(region, animated: true)
+            onStart = true
+        }
 
-        
-        
-        
         mapView.delegate = context.coordinator
         
         return mapView
     }
+    
+    
     
     func updateUIView(_ view: MKMapView, context: Context) {
         view.delegate = context.coordinator
         
         view.showsUserLocation = true
         
+        print(view.centerCoordinate)
+        
         guard var coordinate = manager.location?.coordinate else { return }
         if (isCreatingPin) {
             coordinate = newPin.coordinate
+            let region = view.regionThatFits(MKCoordinateRegion(center: coordinate, latitudinalMeters: isCreatingPin ? 200 : 2400, longitudinalMeters: isCreatingPin ? 200 : 2400))
+            view.setRegion(region, animated: true)
+        }        
+        
+        if (onStart == false) {
+            let region = view.regionThatFits(MKCoordinateRegion(center: coordinate, latitudinalMeters: isCreatingPin ? 200 : 2400, longitudinalMeters: isCreatingPin ? 200 : 2400))
+            view.setRegion(region, animated: true)
         }
-
-        let region = view.regionThatFits(MKCoordinateRegion(center: coordinate, latitudinalMeters: isCreatingPin ? 200 : 2400, longitudinalMeters: isCreatingPin ? 200 : 2400))
-        view.setRegion(region, animated: true)
         
         if (interact == false && newPin != nil) {
             view.removeAnnotation(newPin)
@@ -225,7 +246,7 @@ struct CustomMap: UIViewRepresentable {
 
                 add = (firstLocation?.formattedAddress)!
                 print(add)
-
+                saveCoords = mapView.centerCoordinate
                 isCreatingPin = true
                 oldPin = newPin
                 newPin = MapPin(coordinate: coordinate,

@@ -129,20 +129,25 @@ class CreateEventModel: ObservableObject {
     func update() {
         self.events = []
         self.eventsString = []
-        DataHandler.shared.events.values.forEach { event in
+        DataHandler.shared.events.keys.forEach { key in
+            let event = DataHandler.shared.events[key]! as [String:Any]
             self.events.append(event)
             self.eventsString.append([
                 "name": event["name"] as! String,
+                "id": key,
                 "coords": event["coords"] as! String,
             ])
         }
         
         self.incomingEvents = []
         self.incomingEventsString = []
-        DataHandler.shared.incomingEvents.values.forEach { event in
+        DataHandler.shared.incomingEvents.keys.forEach { key in
+            print(key)
+            let event = DataHandler.shared.incomingEvents[key]! as [String:Any]
             self.incomingEvents.append(event)
             self.incomingEventsString.append([
                 "name": event["name"] as! String,
+                "id": key,
                 "coords": event["coords"] as! String,
             ])
         }
@@ -183,6 +188,7 @@ class CreateEventModel: ObservableObject {
 struct EventTab: View {
     
     var event: [String:String]
+    var incoming: Bool = false
     
     var body: some View {
         HStack {
@@ -195,6 +201,14 @@ struct EventTab: View {
         }
         .frame(alignment: .leading)
         .padding(.horizontal, 15)
+        .padding(.vertical, 5)
+        .onTapGesture {
+            if incoming == false {
+                DataHandler.shared.openEventChat(id: event["id"] ?? "")
+            } else {
+                DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
+            }
+        }
     }
 }
 
@@ -251,6 +265,10 @@ struct MapView: View {
     
     @State var center: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 0, longitude: 0)
     
+    @State var onStart = false
+    
+    @State var saveCoords = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+    
     var body: some View {
         ZStack {
             
@@ -302,8 +320,9 @@ struct MapView: View {
 //                .opacity(interact ? 0.5 : 1)
 //
             
-            CustomMap(annotations: $model.pins,interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin, oldPin: $oldPin)
+            CustomMap(annotations: $model.pins,interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin, oldPin: $oldPin, onStart: $onStart, saveCoords: $saveCoords)
                 .onAppear {
+                    onStart = true
                     model.update()
                     DataHandler.shared.eventPageUpdate = model.update
                 }
@@ -338,11 +357,12 @@ struct MapView: View {
                                     .padding(.bottom, 15)
                             }
                             
-                            Text("Incoming Events").padding(.bottom, 18)
+                            Text("Incoming Events").padding(.bottom, 18).foregroundColor(Color.white.opacity(0.8))
                             ForEach (model.incomingEventsString, id: \.self) { event in
-                                EventTab(event: event)
+                                EventTab(event: event, incoming: true)
                                     .frame(maxWidth: .infinity)
                                     .padding(.bottom, 18)
+                                    
                             }
                         }.frame(height: 500)
                             .gesture(DragGesture()
@@ -491,7 +511,7 @@ struct MapView: View {
                                 
                                 List {
                                     ForEach(model.searchResults, id: \.self) { friend in
-                                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", selectable: true, onSelect: {model.invitedFriends.append((friend["username"] ?? "").lowercased())}, onUnselect: {model.invitedFriends = model.invitedFriends.filter{ $0 != (friend["username"] ?? "").lowercased()}}, image: friend["pfp"])
+                                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", id: friend["id"] ?? "", selectable: true, onSelect: {model.invitedFriends.append((friend["username"] ?? "").lowercased())}, onUnselect: {model.invitedFriends = model.invitedFriends.filter{ $0 != (friend["username"] ?? "").lowercased()}}, image: friend["pfp"])
                                             .listRowInsets(EdgeInsets())
                                             .listRowSeparator(.hidden)
                                     }

@@ -102,6 +102,7 @@ struct FriendLabel: View {
     
     let name: String
     let username: String
+    let id: String
     var add = false
     var remove = false
     var incout = false
@@ -116,6 +117,8 @@ struct FriendLabel: View {
     var onUnselect: () -> Void = {}
     
     let image: String?
+    
+    var canChat = false
     
     var body: some View {
         HStack {
@@ -212,6 +215,8 @@ struct FriendLabel: View {
                     onUnselect()
                 }
                 update()
+            } else if (canChat) {
+                DataHandler.shared.openFriendChat(id: id, name: name)
             }
         }
         
@@ -337,7 +342,7 @@ struct FriendsPage: View {
                     if !requestPage {
                         if (model.friends.count > 0 && model.friends[0]["username"] != nil) {
                             List(model.friends, id: \.self) { friend in
-                                FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", remove: true, update: model.update, image: friend["pfp"])
+                                FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", remove: true, update: model.update, image: friend["pfp"], canChat: true)
                                     .padding(.horizontal, 5)
                                     .padding(.vertical, 5)
                                     .listRowBackground(Color.black)
@@ -354,7 +359,7 @@ struct FriendsPage: View {
                                 Text("Incoming Requests")
                                     .foregroundColor(Color.gray)
                                 ForEach(model.incomingFriends, id: \.self) { friend in
-                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", add: true, remove: true, incout: true, update: model.update, image: friend["pfp"])
+                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", add: true, remove: true, incout: true, update: model.update, image: friend["pfp"])
                                         .padding(.vertical,5)
                                         .padding(.horizontal,25)
                                         .listRowBackground(Color.black)
@@ -367,7 +372,7 @@ struct FriendsPage: View {
                                 Text("Outgoing Requests")
                                     .foregroundColor(Color.gray)
                                 ForEach(model.outgoingFriends, id: \.self) { friend in
-                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", remove: true, incout: true, update: model.update, onBeforeRemove: {model.reload = true}, image: friend["pfp"])
+                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", remove: true, incout: true, update: model.update, onBeforeRemove: {model.reload = true}, image: friend["pfp"])
                                         .padding(.vertical,5)
                                         .padding(.horizontal,25)
                                         .listRowBackground(Color.black)
@@ -459,7 +464,7 @@ struct FriendsPage: View {
                     ScrollView {
                         if (model.searchResults.count > 0 && model.searchResults[0] != [:]) {
                             ForEach(model.searchResults, id: \.self) { friend in
-                                FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", selectable: true, onSelect: {
+                                FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", selectable: true, onSelect: {
                                     withAnimation {
                                         focusedField = nil
                                         model.requestFriend(username: friend["username"] ?? "")

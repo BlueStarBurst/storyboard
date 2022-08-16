@@ -14,6 +14,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        FirebaseConfiguration.shared.setLoggerLevel(.min)
         
         
         return true
@@ -73,7 +74,7 @@ struct storyboardApp: App {
     @State var page = 0
     
     @State var fullApp = false
-    @State var isMessageView = true
+    @State var isMessageView = false
     
     var body: some Scene {
         WindowGroup {
