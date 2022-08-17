@@ -11,7 +11,6 @@ import Firebase
 import FirebaseStorage
 import FirebaseCore
 import FirebaseFirestore
-import JWTKit
 
 class FirebaseManager: NSObject {
 

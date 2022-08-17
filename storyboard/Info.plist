@@ -26,7 +26,7 @@
 		<dict/>
 	</array>
 	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
+	<true/>
 	<key>MKDirectionsApplicationSupportedModes</key>
 	<array>
 		<string>MKDirectionsModeCar</string>
@@ -34,5 +34,11 @@
 	</array>
 	<key>NSLocationDefaultAccuracyReduced</key>
 	<string>Please allow us to access your location</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

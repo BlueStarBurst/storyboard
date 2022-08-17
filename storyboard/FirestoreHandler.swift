@@ -11,7 +11,7 @@ import Firebase
 import FirebaseStorage
 import FirebaseCore
 import FirebaseFirestore
-import JWTKit
+import FirebaseMessaging
 
 struct ChatMessage: Identifiable {
     var id: String { documentId }
@@ -84,7 +84,18 @@ class DataHandler: NSObject, ObservableObject {
         
         self.getSelf(onComplete: {
             onComplete()
+            //            Messaging.messaging().token { token, error in
+            //                if let error = error {
+            //                    print("Error fetching FCM registration token: \(error)")
+            ////                    print(error)
+            //                } else if let token = token {
+            //                    print("TOKEN")
+            //                    print(token)
+            //                    print("END")
+            //                }
+            //            }
             //            self.getOutgoing()
+            self.updateToken()
             self.setupListeners()
         })
     }
@@ -580,6 +591,10 @@ class DataHandler: NSObject, ObservableObject {
             
             print("successfully saved message")
         }
+        
+        for username in self.events[self.currentEvent ?? ""]?["invited"] as? [String] ?? [] {
+            sendPush(username: username, fromName: (self.currentUser?["fullname"] ?? "") as! String, title: (self.currentUser?["fullname"] ?? "") as! String, body: message)
+        }
     }
     
     func openEventChat(id: String?) {
@@ -589,9 +604,9 @@ class DataHandler: NSObject, ObservableObject {
         if id == nil {
             return
         }
-
+        
         self.currentEvent = id
-
+        
         self.currentChatName = self.events[id!]?["name"] as! String
         
         self.getMessages()
@@ -606,9 +621,9 @@ class DataHandler: NSObject, ObservableObject {
         if id == nil {
             return
         }
-
+        
         self.currentEvent = id
-
+        
         self.currentChatName = self.incomingEvents[id!]?["name"] as! String
         
         self.getMessages()
@@ -623,9 +638,9 @@ class DataHandler: NSObject, ObservableObject {
         if id == nil {
             return
         }
-
+        
         self.currentEvent = id
-
+        
         self.currentChatName = name ?? ""
         
         self.getFriendMessages()
@@ -723,6 +738,50 @@ class DataHandler: NSObject, ObservableObject {
             }
             
             print("successfully saved friend message")
+        }
+        
+        self.sendPush(toId: self.currentEvent!, fromName: (self.currentUser?["fullname"] ?? "") as! String, title: (self.currentUser?["fullname"] ?? "") as! String, body: message)
+    }
+    
+    
+    func sendPush(toId: String, fromName: String, title: String, body: String) {
+        
+        getUser(id: toId, completionHandler: { user in
+            
+            HTTPHandler().POST(url: "/sendMessage", data: ["title": title, "body": body, "token": user?["token"] ?? ""], completion: { data in
+                print("Something Happened")
+            })
+            
+        })
+    }
+    
+    func sendPush(username: String, fromName: String, title: String, body: String) {
+        
+        getUser(username: username, completionHandler: { user in
+            
+            HTTPHandler().POST(url: "/sendMessage", data: ["title": title, "body": body, "token": user["token"] ?? ""], completion: { data in
+                print("Something Happened")
+            })
+            
+        })
+    }
+    
+    func updateToken() {
+        Messaging.messaging().token { token, error in
+            if let error = error {
+                print(error)
+            } else if let token = token {
+                print("UPDATING TOKEN")
+                let docRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").updateData([
+                    "token": token
+                ]) { err in
+                    if let err = err {
+                        print(err)
+                    } else {
+                        print("TOKEN UPDATED")
+                    }
+                }
+            }
         }
     }
     

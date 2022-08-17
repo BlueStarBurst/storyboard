@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Firebase
-import JWTKit
 
 extension StringProtocol {
     subscript(offset: Int) -> String {
@@ -167,19 +166,6 @@ class LoginViewModel: ObservableObject {
         self.initializing = false
     }
 }
-
-struct PayLoad: JWTPayload,Equatable {
-    
-    enum CodingKeys: String,CodingKey {
-        case user_id
-    }
-    
-    var user_id: String
-    func verify(using signer: JWTSigner) throws {
-        
-    }
-}
-
 
 
 

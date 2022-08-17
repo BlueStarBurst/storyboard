@@ -126,7 +126,7 @@ class MapViewCoordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelega
 //    }
     
     func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
-        print("WILL CHANGE")
+//        print("WILL CHANGE")
     }
 }
 
@@ -193,7 +193,7 @@ struct CustomMap: UIViewRepresentable {
         
         view.showsUserLocation = true
         
-        print(view.centerCoordinate)
+//        print(view.centerCoordinate)
         
         guard var coordinate = manager.location?.coordinate else { return }
         if (isCreatingPin) {
