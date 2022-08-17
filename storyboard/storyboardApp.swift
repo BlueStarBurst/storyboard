@@ -12,49 +12,77 @@ import FirebaseFirestore
 import FirebaseMessaging
 import UserNotifications
 
+struct Push: Decodable {
+    let aps: APS
+    
+    struct APS: Decodable {
+        let alert: Alert
+        
+        struct Alert: Decodable {
+            let title: String
+            let body: String
+        }
+    }
+    
+    init(decoding userInfo: [AnyHashable : Any]) throws {
+        let data = try JSONSerialization.data(withJSONObject: userInfo, options: .prettyPrinted)
+        self = try JSONDecoder().decode(Push.self, from: data)
+    }
+}
+
 class AppDelegate: NSObject, UIApplicationDelegate {
     let gcmMessageIDKey = "gcm.message_id"
-
+    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
-
+        
         Messaging.messaging().delegate = self
-
+        
         if #available(iOS 10.0, *) {
-          // For iOS 10 display notification (sent via APNS)
-          UNUserNotificationCenter.current().delegate = self
-
-          let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-          UNUserNotificationCenter.current().requestAuthorization(
-            options: authOptions,
-            completionHandler: {_, _ in })
+            // For iOS 10 display notification (sent via APNS)
+            UNUserNotificationCenter.current().delegate = self
+            
+            let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+            UNUserNotificationCenter.current().requestAuthorization(
+                options: authOptions,
+                completionHandler: {_, _ in })
         } else {
-          let settings: UIUserNotificationSettings =
-          UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
-          application.registerUserNotificationSettings(settings)
+            let settings: UIUserNotificationSettings =
+            UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
+            application.registerUserNotificationSettings(settings)
         }
-
+        
         application.registerForRemoteNotifications()
         return true
     }
-
+    
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-
-      if let messageID = userInfo[gcmMessageIDKey] {
-        print("Message ID: \(messageID)")
-      }
-
-      print(userInfo)
-
-      completionHandler(UIBackgroundFetchResult.newData)
+        
+        if let messageID = userInfo[gcmMessageIDKey] {
+            print("Message ID: \(messageID)")
+        }
+        
+        print(userInfo)
+        
+        guard let push = try? Push(decoding: userInfo) else { return }
+        
+        print(push.aps.alert.title)
+        
+        if (push.aps.alert.title == DataHandler.shared.currentChatName && DataHandler.shared.isMessageView == true) {
+            print("SKIPPING PUSH NOTIF")
+        } else {
+            completionHandler(UIBackgroundFetchResult.newData)
+        }
+        
+        
     }
 }
 
 extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-
-      let deviceToken:[String: String] = ["token": fcmToken ?? ""]
+        
+        let deviceToken:[String: String] = ["token": fcmToken ?? ""]
         print("Device token: ", deviceToken) // This token can be used for testing notifications on FCM
     }
     
@@ -72,44 +100,61 @@ extension AppDelegate: MessagingDelegate {
 
 @available(iOS 10, *)
 extension AppDelegate : UNUserNotificationCenterDelegate {
-
-  // Receive displayed notifications for iOS 10 devices.
-  func userNotificationCenter(_ center: UNUserNotificationCenter,
-                              willPresent notification: UNNotification,
-    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-    let userInfo = notification.request.content.userInfo
-
-    if let messageID = userInfo[gcmMessageIDKey] {
-        print("Message ID: \(messageID)")
+    
+    // Receive displayed notifications for iOS 10 devices.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let userInfo = notification.request.content.userInfo
+        
+        if let messageID = userInfo[gcmMessageIDKey] {
+            print("Message ID: \(messageID)")
+        }
+        
+        print(userInfo)
+        
+        guard let push = try? Push(decoding: userInfo) else { return }
+        
+        print(push.aps.alert.title)
+        
+        if (push.aps.alert.title == DataHandler.shared.currentChatName && DataHandler.shared.isMessageView == true) {
+            print("SKIPPING PUSH NOTIF")
+        } else {
+            completionHandler([[.banner, .badge, .sound]])
+        }
+        
+        
+        // Change this to your preferred presentation option
+        
+//        guard let push = try? Push(decoding: userInfo) else { return }
+//
+//        print(push.aps.alert.title)
+        
+        //      if (DataHandler.shared.isMessageView && DataHandler.shared.currentChatName == userInfo[\])
+        
     }
-
-    print(userInfo)
-
-    // Change this to your preferred presentation option
-    completionHandler([[.banner, .badge, .sound]])
-  }
-
+    
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-
+        
     }
-
+    
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-
+        
     }
-
-  func userNotificationCenter(_ center: UNUserNotificationCenter,
-                              didReceive response: UNNotificationResponse,
-                              withCompletionHandler completionHandler: @escaping () -> Void) {
-    let userInfo = response.notification.request.content.userInfo
-
-    if let messageID = userInfo[gcmMessageIDKey] {
-      print("Message ID from userNotificationCenter didReceive: \(messageID)")
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+        
+        if let messageID = userInfo[gcmMessageIDKey] {
+            print("Message ID from userNotificationCenter didReceive: \(messageID)")
+        }
+        
+        print(userInfo)
+        
+        completionHandler()
     }
-
-    print(userInfo)
-
-    completionHandler()
-  }
 }
 
 class HTTPHandler {
