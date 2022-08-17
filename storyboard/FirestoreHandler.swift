@@ -450,6 +450,8 @@ class DataHandler: NSObject, ObservableObject {
                             if let err = err {
                                 print("ERROR WITH FRIEND")
                             } else {
+                                
+                                self.sendPush(token: (data["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: "New Friend", body: (((data["fullname"] as? String) ?? "") + " has accepted your friend request!"))
                                 completionhandler()
                             }
                         }
@@ -479,7 +481,7 @@ class DataHandler: NSObject, ObservableObject {
                             if error != nil {
                                 return
                             }
-                            
+                            self.sendPush(token: (data["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: "New Friend Request", body: (((data["fullname"] as? String) ?? "") + " has sent you a friend request!"))
                             completionhandler()
                         }
                     }
@@ -554,6 +556,8 @@ class DataHandler: NSObject, ObservableObject {
                             return
                         }
                     }
+                    
+                    self.sendPush(token: (datas["token"] as? String) ?? "", fromName: data["name"] as? String ?? "", title: data["name"] as? String ?? "", body: ((self.currentUser?["fullname"] as? String) ?? "") + " has invited you to an event!")
                 })
             }
             
@@ -593,7 +597,7 @@ class DataHandler: NSObject, ObservableObject {
         }
         
         for username in self.events[self.currentEvent ?? ""]?["invited"] as? [String] ?? [] {
-            sendPush(username: username, fromName: (self.currentUser?["fullname"] ?? "") as! String, title: (self.currentUser?["fullname"] ?? "") as! String, body: message)
+            sendPush(username: username, fromName: (self.currentUser?["fullname"] ?? "") as! String, title: self.currentChatName, body: message)
         }
     }
     
@@ -764,6 +768,14 @@ class DataHandler: NSObject, ObservableObject {
             })
             
         })
+    }
+    
+    func sendPush(token: String, fromName: String, title: String, body: String) {
+        
+        HTTPHandler().POST(url: "/sendMessage", data: ["title": title, "body": body, "token": token], completion: { data in
+            print("Something Happened")
+        })
+
     }
     
     func updateToken() {
