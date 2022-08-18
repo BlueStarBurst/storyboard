@@ -87,6 +87,9 @@ class MapViewCoordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelega
         guard let pin = view.annotation as? MapPin else {
             return
         }
+        
+        mapViewController.selectedPin = pin
+        print(pin.id)
         pin.action?()
     }
     
@@ -153,6 +156,8 @@ struct CustomMap: UIViewRepresentable {
     @Binding var onStart: Bool
     
     @Binding var saveCoords: CLLocationCoordinate2D
+    
+    @Binding var selectedPin: MapPin?
     
     let mapView = MKMapView(frame: .zero)
     

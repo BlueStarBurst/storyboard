@@ -11,8 +11,6 @@ import CoreLocation
 import Contacts
 import Firebase
 
-var real_pins: [Pin] = []
-
 class MapPin: NSObject, MKAnnotation {
     
     let coordinate: CLLocationCoordinate2D
@@ -20,17 +18,20 @@ class MapPin: NSObject, MKAnnotation {
     let subtitle: String?
     let image: UIImage?
     let action: (() -> Void)?
+    let id: String?
     
     init(coordinate: CLLocationCoordinate2D,
          title: String? = nil,
          subtitle: String? = nil,
          action: (() -> Void)? = nil,
-         image: UIImage? = nil) {
+         image: UIImage? = nil,
+         id: String? = nil) {
         self.coordinate = coordinate
         self.title = title
         self.subtitle = subtitle
         self.action = {print("HI")}
         self.image = image
+        self.id = id
     }
     
 }
@@ -56,6 +57,8 @@ class CreateEventModel: ObservableObject {
     @Published var invitedFriends: [String] = []
     
     @Published var pins: [MapPin] = []
+    
+    @Published var selectedPin: MapPin? = nil
     
     var searchResults: [[String:String]] {
         if self.searchText.isEmpty {
@@ -101,20 +104,20 @@ class CreateEventModel: ObservableObject {
         })
         
         
-        HTTPHandler().POST(url: "/createEvent", data: ["name": self.name, "address": self.address, "invited": self.invitedFriends, "date": formatted, "coords": encodeLocation(loc: newPin.coordinate), "id": uid]) { data in
-            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
-                print("Could not decode the data")
-                return
-            }
-            
-            if (decoded["success"]!) {
-                print("SUCCESS")
-                self.update()
-            } else {
-                print("FAIL")
-            }
-            
-        }
+//        HTTPHandler().POST(url: "/createEvent", data: ["name": self.name, "address": self.address, "invited": self.invitedFriends, "date": formatted, "coords": encodeLocation(loc: newPin.coordinate), "id": uid]) { data in
+//            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
+//                print("Could not decode the data")
+//                return
+//            }
+//
+//            if (decoded["success"]!) {
+//                print("SUCCESS")
+//                self.update()
+//            } else {
+//                print("FAIL")
+//            }
+//
+//        }
     }
     
     func encodeLocation(loc: CLLocationCoordinate2D) -> String {
@@ -130,7 +133,8 @@ class CreateEventModel: ObservableObject {
         self.events = []
         self.eventsString = []
         DataHandler.shared.events.keys.forEach { key in
-            let event = DataHandler.shared.events[key]! as [String:Any]
+            var event = DataHandler.shared.events[key]! as [String:Any]
+            event["id"] = key
             self.events.append(event)
             self.eventsString.append([
                 "name": event["name"] as! String,
@@ -143,7 +147,8 @@ class CreateEventModel: ObservableObject {
         self.incomingEventsString = []
         DataHandler.shared.incomingEvents.keys.forEach { key in
             print(key)
-            let event = DataHandler.shared.incomingEvents[key]! as [String:Any]
+            var event = DataHandler.shared.incomingEvents[key]! as [String:Any]
+            event["id"] = key
             self.incomingEvents.append(event)
             self.incomingEventsString.append([
                 "name": event["name"] as! String,
@@ -164,20 +169,18 @@ class CreateEventModel: ObservableObject {
                 break
             }
             self.pins.append(
-                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {print("PIN")})
+                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {}, id: event["id"] as? String)
             )
-            
-            real_pins.append(Pin(name: (event["name"] as! String ) , coordinate: decodeLocation(str: event["coords"]! as! String)))
+
         }
         for event in incomingEvents {
             if (event["name"] == nil) {
                 break
             }
             self.pins.append(
-                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {print("PIN")})
+                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {print("PIN")}, id: event["id"] as? String)
             )
-            
-            real_pins.append(Pin(name: (event["name"] as! String ) , coordinate: decodeLocation(str: event["coords"]! as! String)))
+
         }
         
     }
@@ -189,26 +192,32 @@ struct EventTab: View {
     
     var event: [String:String]
     var incoming: Bool = false
+    var isSelected: Bool = false
     
     var body: some View {
         HStack {
             Image(systemName: "mappin.circle.fill")
+                .foregroundColor(isSelected ? Color.red : Color.white)
                 .font(.system(size: 28))
                 .padding(.trailing, 5)
             Text(event["name"] ?? "")
                 .frame(alignment: .leading)
             Spacer()
+            Image(systemName: "bubble.left")
+                .onTapGesture {
+                    if incoming == false {
+                        DataHandler.shared.openEventChat(id: event["id"] ?? "")
+                    } else {
+                        DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
+                    }
+                }
+            Image(systemName: "ellipsis")
+                .rotationEffect(Angle(degrees: 90))
         }
         .frame(alignment: .leading)
         .padding(.horizontal, 15)
         .padding(.vertical, 5)
-        .onTapGesture {
-            if incoming == false {
-                DataHandler.shared.openEventChat(id: event["id"] ?? "")
-            } else {
-                DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
-            }
-        }
+        
     }
 }
 
@@ -320,7 +329,7 @@ struct MapView: View {
 //                .opacity(interact ? 0.5 : 1)
 //
             
-            CustomMap(annotations: $model.pins,interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin, oldPin: $oldPin, onStart: $onStart, saveCoords: $saveCoords)
+            CustomMap(annotations: $model.pins,interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin, oldPin: $oldPin, onStart: $onStart, saveCoords: $saveCoords, selectedPin: $model.selectedPin)
                 .onAppear {
                     onStart = true
                     model.update()
@@ -351,18 +360,32 @@ struct MapView: View {
                         
                         
                         ScrollView {
-                            ForEach (model.eventsString, id: \.self) { event in
-                                EventTab(event: event)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.bottom, 15)
-                            }
-                            
-                            Text("Incoming Events").padding(.bottom, 18).foregroundColor(Color.white.opacity(0.8))
-                            ForEach (model.incomingEventsString, id: \.self) { event in
-                                EventTab(event: event, incoming: true)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.bottom, 18)
+                            ScrollViewReader { scrollViewProxy in
+                                VStack {
+                                    ForEach (model.eventsString, id: \.self["id"]) { event in
+                                        EventTab(event: event, isSelected: model.selectedPin?.id == event["id"])
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.bottom, 15)
+                                            .id(event["id"])
+                                            .onChange(of:model.selectedPin) { change in
+                                                print(change)
+                                            }
+                                    }
                                     
+                                    Text("Incoming Events").padding(.bottom, 18).foregroundColor(Color.white.opacity(0.8))
+                                    ForEach (model.incomingEventsString, id: \.self["id"]) { event in
+                                        EventTab(event: event, incoming: true, isSelected: model.selectedPin?.id == event["id"])
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.bottom, 18)
+                                            .id(event["id"])
+                                    }
+                                }
+                                .onReceive(model.$selectedPin) { _ in
+                                    print(model.selectedPin?.id)
+                                    withAnimation(.easeOut(duration: 0.5)) {
+                                        scrollViewProxy.scrollTo(model.selectedPin?.id ?? "",anchor: .bottom)
+                                    }
+                                }
                             }
                         }.frame(height: 500)
                             .gesture(DragGesture()
