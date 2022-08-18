@@ -68,6 +68,8 @@ struct MessageView: View {
                         Spacer()
                     }
                     Text(model.chatName)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 22)
                     HStack {
                         Spacer()
                         Image(systemName: "person.2.fill")

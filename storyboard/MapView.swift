@@ -29,7 +29,7 @@ class MapPin: NSObject, MKAnnotation {
         self.coordinate = coordinate
         self.title = title
         self.subtitle = subtitle
-        self.action = {print("HI")}
+        self.action = action
         self.image = image
         self.id = id
     }
@@ -59,6 +59,7 @@ class CreateEventModel: ObservableObject {
     @Published var pins: [MapPin] = []
     
     @Published var selectedPin: MapPin? = nil
+    @Published var selectedEventID: String? = ""
     
     var searchResults: [[String:String]] {
         if self.searchText.isEmpty {
@@ -89,7 +90,7 @@ class CreateEventModel: ObservableObject {
         }
         
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "y, M, d, HH::mm::ss, Z"
+        dateFormatter.dateFormat = "y, MM, dd, HH::mm::ss, Z"
         
         
         dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
@@ -102,22 +103,6 @@ class CreateEventModel: ObservableObject {
         DataHandler.shared.createEvent(data: ["name": self.name, "address": self.address, "invited": self.invitedFriends, "date": formatted, "coords": encodeLocation(loc: newPin.coordinate)], completionHandler: {
             print("WORKS")
         })
-        
-        
-//        HTTPHandler().POST(url: "/createEvent", data: ["name": self.name, "address": self.address, "invited": self.invitedFriends, "date": formatted, "coords": encodeLocation(loc: newPin.coordinate), "id": uid]) { data in
-//            guard let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else {
-//                print("Could not decode the data")
-//                return
-//            }
-//
-//            if (decoded["success"]!) {
-//                print("SUCCESS")
-//                self.update()
-//            } else {
-//                print("FAIL")
-//            }
-//
-//        }
     }
     
     func encodeLocation(loc: CLLocationCoordinate2D) -> String {
@@ -135,6 +120,7 @@ class CreateEventModel: ObservableObject {
         DataHandler.shared.events.keys.forEach { key in
             var event = DataHandler.shared.events[key]! as [String:Any]
             event["id"] = key
+            print(event["date"])
             self.events.append(event)
             self.eventsString.append([
                 "name": event["name"] as! String,
@@ -162,6 +148,11 @@ class CreateEventModel: ObservableObject {
 //        self.incomingEvents = DataHandler.shared.incomingEvents
     }
     
+    func updateSelected(id: String) {
+        print("ID: \(id)")
+        self.selectedEventID = id
+    }
+    
     
     func translatePins() {
         for event in events {
@@ -169,7 +160,7 @@ class CreateEventModel: ObservableObject {
                 break
             }
             self.pins.append(
-                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {}, id: event["id"] as? String)
+                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {self.updateSelected(id: event["id"] as? String ?? "")}, id: event["id"] as? String)
             )
 
         }
@@ -178,7 +169,7 @@ class CreateEventModel: ObservableObject {
                 break
             }
             self.pins.append(
-                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {print("PIN")}, id: event["id"] as? String)
+                MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {self.updateSelected(id: event["id"] as? String ?? "")}, id: event["id"] as? String)
             )
 
         }
@@ -192,12 +183,14 @@ struct EventTab: View {
     
     var event: [String:String]
     var incoming: Bool = false
-    var isSelected: Bool = false
+    var id: String = ""
+    
+    @Binding var modelCurrentEventID: String?
     
     var body: some View {
         HStack {
             Image(systemName: "mappin.circle.fill")
-                .foregroundColor(isSelected ? Color.red : Color.white)
+                .foregroundColor(id == modelCurrentEventID ? Color.red : Color.white)
                 .font(.system(size: 28))
                 .padding(.trailing, 5)
             Text(event["name"] ?? "")
@@ -363,27 +356,28 @@ struct MapView: View {
                             ScrollViewReader { scrollViewProxy in
                                 VStack {
                                     ForEach (model.eventsString, id: \.self["id"]) { event in
-                                        EventTab(event: event, isSelected: model.selectedPin?.id == event["id"])
+                                        EventTab(event: event, id: event["id"] ?? "", modelCurrentEventID: $model.selectedEventID)
                                             .frame(maxWidth: .infinity)
                                             .padding(.bottom, 15)
-                                            .id(event["id"])
-                                            .onChange(of:model.selectedPin) { change in
-                                                print(change)
-                                            }
+                                            .id(event["id"] ?? "")
                                     }
                                     
                                     Text("Incoming Events").padding(.bottom, 18).foregroundColor(Color.white.opacity(0.8))
                                     ForEach (model.incomingEventsString, id: \.self["id"]) { event in
-                                        EventTab(event: event, incoming: true, isSelected: model.selectedPin?.id == event["id"])
+                                        EventTab(event: event, id: event["id"] ?? "", modelCurrentEventID: $model.selectedEventID)
                                             .frame(maxWidth: .infinity)
                                             .padding(.bottom, 18)
-                                            .id(event["id"])
+                                            .id(event["id"] ?? "")
                                     }
+                                    VStack {
+                                        Spacer()
+                                    }
+                                    .frame(height: 500)
                                 }
-                                .onReceive(model.$selectedPin) { _ in
-                                    print(model.selectedPin?.id)
+                                .onReceive(model.$selectedEventID) { _ in
+                                    print(model.selectedEventID)
                                     withAnimation(.easeOut(duration: 0.5)) {
-                                        scrollViewProxy.scrollTo(model.selectedPin?.id ?? "",anchor: .bottom)
+                                        scrollViewProxy.scrollTo(model.selectedEventID,anchor: .top)
                                     }
                                 }
                             }
