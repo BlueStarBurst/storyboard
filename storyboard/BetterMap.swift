@@ -5,6 +5,48 @@ import CoreLocation
 import Contacts
 import Firebase
 
+extension MKMapView {
+        
+        
+        func removeAnnotationAndOverlay(annotation: MKAnnotation) {
+            
+            removeAnnotation(annotation)
+            
+            if overlays.count > 0 {
+                
+                if let overlay = overlays.first {
+                    
+                    removeOverlay(overlay)
+                    
+                }
+                
+            }
+           
+        }
+        
+        func removeAllOverlays() {
+
+            removeOverlays(overlays)
+
+        }
+        
+        
+        func removeAllAnnotations() {
+            
+               
+            removeAnnotations(annotations)
+                
+    
+        }
+        
+        func removeAllAnnotationsAndOverlays() {
+            
+            removeAllOverlays()
+            
+            removeAllAnnotations()
+        }
+    }
+
 extension CLPlacemark {
     var formattedAddress: String? {
         
@@ -89,6 +131,7 @@ class MapViewCoordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelega
         }
         
         mapViewController.selectedPin = pin
+        mapViewController.mapView.setCenter(pin.coordinate, animated: true)
         print(pin.id)
         pin.action?()
     }
@@ -106,7 +149,13 @@ class MapViewCoordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelega
             return annotationView
         }
         
+        
+        
+        
         if let image = pin.image {
+            if (mapViewController.annotations[pin.id ?? ""] == nil) {
+                return nil
+            }
             annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: NSStringFromClass(MapPin.self), for: pin)
             annotationView?.image = image
         } else {
@@ -139,7 +188,7 @@ class MapViewCoordinator: NSObject, MKMapViewDelegate, UIGestureRecognizerDelega
 struct CustomMap: UIViewRepresentable {
 
    
-    @Binding var annotations: [MapPin]
+    @Binding var annotations: [String:MapPin]
 //    let addAnnotationListener: (MapPin) -> Void
     
     @Binding var interact: Bool
@@ -160,7 +209,7 @@ struct CustomMap: UIViewRepresentable {
     
     @Binding var selectedPin: MapPin?
     
-    let mapView = MKMapView(frame: .zero)
+    @Binding var mapView: MKMapView
     
     func coordsToLoc(coords: CLLocationCoordinate2D) -> CLLocation {
         return CLLocation(latitude: coords.latitude, longitude: coords.longitude)
@@ -223,7 +272,11 @@ struct CustomMap: UIViewRepresentable {
         if isCreatingPin {
             view.addAnnotation(newPin)
         }
-        view.addAnnotations(annotations)
+        
+        for ann in annotations.values {
+            view.addAnnotation(ann)
+        }
+//        view.addAnnotations(annotations.values)
 //        if annotations.count == 1 {
 //            let coords = annotations.first!.coordinate
 //            let region = MKCoordinateRegion(center: coords, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))

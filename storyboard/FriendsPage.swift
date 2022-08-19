@@ -120,10 +120,13 @@ struct FriendLabel: View {
     
     var canChat = false
     
+    var isFriend = false
+    
     var body: some View {
         HStack {
             WebImage(url: URL(string:image ?? ""))
                 .resizable()
+                .scaledToFill()
                 .frame(maxWidth: 60, maxHeight: 60)
                 .scaledToFill()
                 .edgesIgnoringSafeArea(.all)
@@ -202,6 +205,34 @@ struct FriendLabel: View {
                         
                     }
             }
+            
+            if (canChat) {
+                Image(systemName: "bubble.left")
+                    .onTapGesture {
+                        DataHandler.shared.openFriendChat(id: id, name: name)
+                    }
+            }
+            
+            if (isFriend) {
+                Menu {
+                    Button(role: .destructive, action: {DataHandler.shared.removeOutFriend(username: self.username, completionHandler: {
+                        print("remove Data")
+                        update()
+                    })}) {
+                        Label("Remove Friend", systemImage: "trash.fill")
+                    }
+                } label: {
+                    VStack {
+                        Spacer()
+                        Image(systemName: "ellipsis")
+                        
+                            .padding(3)
+                        //                    .imageScale(.large)
+                            .rotationEffect(Angle(degrees: 90))
+                        Spacer()
+                    }
+                }
+            }
         }
         .padding(.horizontal, selectable ? 15 : 0)
         .padding(.vertical, selectable ? 10 : 0)
@@ -215,8 +246,6 @@ struct FriendLabel: View {
                     onUnselect()
                 }
                 update()
-            } else if (canChat) {
-                DataHandler.shared.openFriendChat(id: id, name: name)
             }
         }
         
@@ -263,6 +292,7 @@ struct FriendsPage: View {
                     HStack {
                         WebImage(url: URL(string:DataHandler.shared.currentUser!["pfp"] as! String ))
                             .resizable()
+                            .scaledToFill()
                             .frame(maxWidth: 75, maxHeight: 75)
                             .scaledToFill()
                             .edgesIgnoringSafeArea(.all)
@@ -342,7 +372,7 @@ struct FriendsPage: View {
                     if !requestPage {
                         if (model.friends.count > 0 && model.friends[0]["username"] != nil) {
                             List(model.friends, id: \.self) { friend in
-                                FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", remove: true, update: model.update, image: friend["pfp"], canChat: true)
+                                FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", update: model.update, image: friend["pfp"], canChat: true, isFriend: true)
                                     .padding(.horizontal, 5)
                                     .padding(.vertical, 5)
                                     .listRowBackground(Color.black)

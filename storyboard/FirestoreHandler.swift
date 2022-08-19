@@ -144,7 +144,7 @@ class DataHandler: NSObject, ObservableObject {
         
         if (self.incListener == nil) {
             
-            self.incListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("incomingFriends").addSnapshotListener { querySnapshot, error in
+            self.incListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("incomingFriends").order(by: "timestamp").addSnapshotListener { querySnapshot, error in
                 guard let snapshot = querySnapshot else {
                     return
                 }
@@ -205,7 +205,7 @@ class DataHandler: NSObject, ObservableObject {
         
         if (self.eventsListener == nil) {
             
-            self.eventsListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("events").addSnapshotListener { querySnapshot, error in
+            self.eventsListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("events").order(by: "date", descending: true).addSnapshotListener { querySnapshot, error in
                 guard let snapshot = querySnapshot else {
                     return
                 }
@@ -222,7 +222,9 @@ class DataHandler: NSObject, ObservableObject {
                     
                     if (diff.type == .removed) {
                         print("REMOVED EVENT")
-                        self.events.removeValue(forKey: diff.document.documentID)
+                        withAnimation {
+                            self.events.removeValue(forKey: diff.document.documentID)
+                        }
                     }
                     
                     self.callAllUpdates()
@@ -233,7 +235,7 @@ class DataHandler: NSObject, ObservableObject {
         
         if (self.incEventsListener == nil) {
             
-            self.incEventsListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("incomingEvents").addSnapshotListener { querySnapshot, error in
+            self.incEventsListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("incomingEvents").order(by: "date", descending: true).addSnapshotListener { querySnapshot, error in
                 guard let snapshot = querySnapshot else {
                     return
                 }
@@ -250,7 +252,9 @@ class DataHandler: NSObject, ObservableObject {
                     
                     if (diff.type == .removed) {
                         print("REMOVED INC EVENT")
-                        self.incomingEvents.removeValue(forKey: diff.document.documentID)
+                        withAnimation {
+                            self.incomingEvents.removeValue(forKey: diff.document.documentID)
+                        }
                     }
                     
                     self.callAllUpdates()
@@ -350,7 +354,7 @@ class DataHandler: NSObject, ObservableObject {
         })
     }
     
-    func getFriends(handler: [[String:String]]?) {
+    func gets(handler: [[String:String]]?) {
         if self.currentUser?["display"] != nil {
             let privRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("friends").getDocuments() { (querySnapshot, err) in
                 if let err = err {
@@ -465,7 +469,8 @@ class DataHandler: NSObject, ObservableObject {
                         "display": data["display"],
                         "fullname":data["fullname"],
                         "pfp": data["pfp"],
-                        "id": data["id"]
+                        "id": data["id"],
+                        "timestamp": Timestamp()
                     ]) { error in
                         if error != nil {
                             return
@@ -476,7 +481,8 @@ class DataHandler: NSObject, ObservableObject {
                             "display": self.currentUser!["display"],
                             "fullname":self.currentUser!["fullname"],
                             "pfp": self.currentUser!["pfp"],
-                            "id": self.currentUser!["id"]
+                            "id": self.currentUser!["id"],
+                            "timestamp": Timestamp()
                         ]) { error in
                             if error != nil {
                                 return
@@ -523,13 +529,24 @@ class DataHandler: NSObject, ObservableObject {
             
             let fOutRef = FirebaseManager.shared.db.collection("users").document(data["id"] as! String).collection("outgoingFriends").document(self.uid ?? "")
             
+            myFriendRef.getDocument { (document, error) in
+                if let document = document {
+                    if document.exists {
+                        HTTPHandler().POST(url: "/deleteFriend", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
+                            print("SUCCESS REMOVING FRIEND MESSAGES")
+                            fFriendRef.delete()
+                            myFriendRef.delete()
+                        })
+                    }
+                }
+            }
+            
             print("ATTEMPT")
-            try? myOutRef.delete()
-            try? myIncRef.delete()
-            try? fOutRef.delete()
-            try? fFriendRef.delete()
-            try? myFriendRef.delete()
-            try? fIncRef.delete()
+            myOutRef.delete()
+            myIncRef.delete()
+            fOutRef.delete()
+            
+            fIncRef.delete()
             
             completionHandler()
             
@@ -539,7 +556,7 @@ class DataHandler: NSObject, ObservableObject {
     
     
     func createEvent(data: [String:Any], completionHandler: @escaping () -> Void) {
-        
+ 
         var ref: DocumentReference? = nil
         ref = FirebaseManager.shared.db.collection("events").addDocument(data: data) { error in
             if error != nil {
@@ -548,8 +565,8 @@ class DataHandler: NSObject, ObservableObject {
             let eventRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("events").document(ref!.documentID)
             
             (data["invited"] as! [String]).forEach { friend in
-                self.getUser(username: friend, completionHandler: { datas in
-                    let fFriendRef = FirebaseManager.shared.db.collection("users").document(datas["id"] as! String).collection("incomingEvents").document(ref!.documentID)
+                self.getUser(id: friend, completionHandler: { datas in
+                    let fFriendRef = FirebaseManager.shared.db.collection("users").document(datas?["id"] as? String ?? "").collection("incomingEvents").document(ref!.documentID)
                     
                     fFriendRef.setData(data) { err in
                         if error != nil {
@@ -557,7 +574,7 @@ class DataHandler: NSObject, ObservableObject {
                         }
                     }
                     
-                    self.sendPush(token: (datas["token"] as? String) ?? "", fromName: data["name"] as? String ?? "", title: data["name"] as? String ?? "", body: ((self.currentUser?["fullname"] as? String) ?? "") + " has invited you to an event!")
+                    self.sendPush(token: (datas?["token"] as? String) ?? "", fromName: data["name"] as? String ?? "", title: data["name"] as? String ?? "", body: ((self.currentUser?["fullname"] as? String) ?? "") + " has invited you to an event!")
                 })
             }
             
@@ -567,6 +584,62 @@ class DataHandler: NSObject, ObservableObject {
                 }
                 completionHandler()
             }
+        }
+    }
+    
+    func updateEvent(data: [String:Any], id: String, completionHandler: @escaping () -> Void) {
+        let doc = FirebaseManager.shared.db.collection("events").document(id)
+        
+        doc.setData(data)
+        
+        for attendee in data["attending"] as! [String] {
+            getUser(id: attendee, completionHandler: { user in
+                FirebaseManager.shared.db.collection("users").document(attendee).collection("events").document(id).setData(data)
+            })
+        }
+        
+        for attendee in data["invited"] as! [String] {
+            getUser(id: attendee, completionHandler: { user in
+                FirebaseManager.shared.db.collection("users").document(attendee).collection("incomingEvents").document(id).setData(data)
+            })
+        }
+    }
+    
+    func joinEvent(id: String) {
+        var event = events[id]
+        var att = event?["attending"] as! [String]
+        var inv = event?["invited"] as! [String]
+        
+        att.append(self.uid!)
+        inv = inv.filter{ $0 != self.uid}
+    
+        event?["attending"] = att
+        event?["invited"] = inv
+        
+        updateEvent(data: event!, id: id, completionHandler: {})
+    
+    }
+    
+    func leaveEvent(id: String) {
+        var event = events[id]
+        var att = event?["attending"] as! [String]
+        var inv = event?["invited"] as! [String]
+        
+        att = att.filter{ $0 != self.uid}
+        inv = inv.filter{ $0 != self.uid}
+        
+        event?["attending"] = att
+        event?["invited"] = inv
+        
+        FirebaseManager.shared.db.collection("users").document(self.uid!).collection("events").document(id).delete()
+        FirebaseManager.shared.db.collection("users").document(self.uid!).collection("incomingEvents").document(id).delete()
+        
+        if (att.count + inv.count == 0) {
+            HTTPHandler().POST(url: "/deleteEvent", data: ["eventId": id], completion: {data in
+                print("SUCCESS IN DELETION")
+            })
+        } else {
+            updateEvent(data: event!, id: id, completionHandler: {})
         }
     }
     

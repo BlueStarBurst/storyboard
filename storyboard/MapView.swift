@@ -10,6 +10,45 @@ import MapKit
 import CoreLocation
 import Contacts
 import Firebase
+import FirebaseFirestore
+
+extension Date {
+    
+    static func - (lhs: Date, rhs: Date) -> TimeInterval {
+        return lhs.timeIntervalSinceReferenceDate - rhs.timeIntervalSinceReferenceDate
+    }
+    
+}
+
+extension TimeInterval {
+    var milliseconds: Int {
+        return Int((truncatingRemainder(dividingBy: 1)) * 1000)
+    }
+    
+    var seconds: Int {
+        return Int(self) % 60
+    }
+    
+    var minutes: Int {
+        return (Int(self) / 60 ) % 60
+    }
+    
+    var hours: Int {
+        return Int(self) / 3600
+    }
+    
+    var stringTime: String {
+        if hours != 0 {
+            return "\(hours)h \(minutes)m \(seconds)s"
+        } else if minutes != 0 {
+            return "\(minutes)m \(seconds)s"
+        } else if milliseconds != 0 {
+            return "\(seconds)s \(milliseconds)ms"
+        } else {
+            return "\(seconds)s"
+        }
+    }
+}
 
 class MapPin: NSObject, MKAnnotation {
     
@@ -37,6 +76,9 @@ class MapPin: NSObject, MKAnnotation {
 }
 
 class CreateEventModel: ObservableObject {
+    
+    @Published var mapView = MKMapView(frame: .zero)
+    
     @Published var name: String = ""
     
     @Published var address: String = ""
@@ -56,7 +98,7 @@ class CreateEventModel: ObservableObject {
     
     @Published var invitedFriends: [String] = []
     
-    @Published var pins: [MapPin] = []
+    @Published var pins: [String:MapPin] = [:]
     
     @Published var selectedPin: MapPin? = nil
     @Published var selectedEventID: String? = ""
@@ -89,18 +131,20 @@ class CreateEventModel: ObservableObject {
             return
         }
         
+//        self.date = Date()
+        
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "y, MM, dd, HH::mm::ss, Z"
         
         
-        dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
+        dateFormatter.timeZone = TimeZone.current
         
         let formatted = dateFormatter.string(from: date)
         //        let formatted = date.formatted()
         
         print(formatted)
         
-        DataHandler.shared.createEvent(data: ["name": self.name, "address": self.address, "invited": self.invitedFriends, "date": formatted, "coords": encodeLocation(loc: newPin.coordinate)], completionHandler: {
+        DataHandler.shared.createEvent(data: ["name": self.name, "address": self.address, "attending": [DataHandler.shared.uid], "invited": self.invitedFriends, "date": Timestamp(date: date), "coords": encodeLocation(loc: newPin.coordinate)], completionHandler: {
             print("WORKS")
         })
     }
@@ -120,11 +164,47 @@ class CreateEventModel: ObservableObject {
         DataHandler.shared.events.keys.forEach { key in
             var event = DataHandler.shared.events[key]! as [String:Any]
             event["id"] = key
-            print(event["date"])
+            
+            event["date"] = (event["date"] as? Timestamp)?.dateValue()
+            var timeString = ""
+            
+            var time = Int(event["date"] as! Date - Date())
+            
+            if (time > 0) {
+                timeString = "In "
+            }
+            var sec = abs(time % 60)
+            var minutes = abs((time / 60) % 60)
+            var hours = abs((time / 60 / 60) % 60)
+            var days = abs((time / 60 / 60 / 24) % 24)
+            
+            print(hours)
+            
+            if (days > 1) {
+                timeString += String(days) + " days"
+            } else if (days > 0) {
+                timeString += String(days) + " day"
+            } else if (hours > 1) {
+                timeString += String(hours) + "hrs"
+            } else if (hours > 0) {
+                timeString += String(hours) + "hr"
+            } else if (minutes > 1) {
+                timeString += String(minutes) + "mins"
+            } else if (minutes > 0) {
+                timeString += String(minutes) + "min"
+            } else if (sec > 0) {
+                timeString += String(sec) + "s"
+            }
+            
+            if (time < 0) {
+                timeString += " ago"
+            }
+            
             self.events.append(event)
             self.eventsString.append([
                 "name": event["name"] as! String,
                 "id": key,
+                "time": timeString,
                 "coords": event["coords"] as! String,
             ])
         }
@@ -135,17 +215,55 @@ class CreateEventModel: ObservableObject {
             print(key)
             var event = DataHandler.shared.incomingEvents[key]! as [String:Any]
             event["id"] = key
+            
+            event["date"] = (event["date"] as? Timestamp)?.dateValue()
+            
+            var timeString = ""
+            
+            var time = Int(event["date"] as! Date - Date())
+            
+            if (time > 0) {
+                timeString = "In "
+            }
+            var sec = abs(time % 60)
+            var minutes = abs((time / 60) % 60)
+            var hours = abs((time / 60 / 60) % 60)
+            var days = abs((time / 60 / 60 / 24) % 24)
+            
+            print(hours)
+            
+            if (days > 1) {
+                timeString += String(days) + " days"
+            } else if (days > 0) {
+                timeString += String(days) + " day"
+            } else if (hours > 1) {
+                timeString += String(hours) + "hrs"
+            } else if (hours > 0) {
+                timeString += String(hours) + "hr"
+            } else if (minutes > 1) {
+                timeString += String(minutes) + "mins"
+            } else if (minutes > 0) {
+                timeString += String(minutes) + "min"
+            } else if (sec > 0) {
+                timeString += String(sec) + "s"
+            }
+            
+            if (time < 0) {
+                timeString += " ago"
+            }
+            
             self.incomingEvents.append(event)
             self.incomingEventsString.append([
                 "name": event["name"] as! String,
                 "id": key,
+                "time": timeString,
                 "coords": event["coords"] as! String,
             ])
         }
         
         self.translatePins()
         self.friends = DataHandler.shared.friends
-//        self.incomingEvents = DataHandler.shared.incomingEvents
+        //        self.incomingEvents = DataHandler.shared.incomingEvents
     }
     
     func updateSelected(id: String) {
@@ -159,19 +277,19 @@ class CreateEventModel: ObservableObject {
             if (event["name"] == nil) {
                 break
             }
-            self.pins.append(
+            self.pins[event["id"] as? String ?? ""] =
                 MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {self.updateSelected(id: event["id"] as? String ?? "")}, id: event["id"] as? String)
-            )
-
+            
+            
         }
         for event in incomingEvents {
             if (event["name"] == nil) {
                 break
             }
-            self.pins.append(
+            self.pins[event["id"] as? String ?? ""] =
                 MapPin(coordinate: decodeLocation(str: event["coords"]! as! String), title: event["name"] as? String , action: {self.updateSelected(id: event["id"] as? String ?? "")}, id: event["id"] as? String)
-            )
-
+            
+            
         }
         
     }
@@ -185,7 +303,16 @@ struct EventTab: View {
     var incoming: Bool = false
     var id: String = ""
     
+    var time: String = ""
+    
+    @Binding var mapView: MKMapView
+    
     @Binding var modelCurrentEventID: String?
+    @Binding var annotations: [String:MapPin]
+    
+    var index: Int = 0
+    
+    
     
     var body: some View {
         HStack {
@@ -193,8 +320,22 @@ struct EventTab: View {
                 .foregroundColor(id == modelCurrentEventID ? Color.red : Color.white)
                 .font(.system(size: 28))
                 .padding(.trailing, 5)
-            Text(event["name"] ?? "")
+            VStack {
+                HStack {
+                    Text(event["name"] ?? "")
+                    Spacer()
+                }
                 .frame(alignment: .leading)
+                if (time != "") {
+                    HStack {
+                        Text(time ?? "")
+                            .foregroundColor(Color.white.opacity(0.7))
+                            .font(.system(size: 13))
+                        Spacer()
+                    }
+                }
+            }
+            .padding(.leading, 3)
             Spacer()
             Image(systemName: "bubble.left")
                 .onTapGesture {
@@ -204,8 +345,41 @@ struct EventTab: View {
                         DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
                     }
                 }
-            Image(systemName: "ellipsis")
-                .rotationEffect(Angle(degrees: 90))
+
+            Menu {
+                if (incoming == true) {
+                    Button(action: {
+                        DataHandler.shared.joinEvent(id: event["id"] ?? "")
+                    }) {
+                        Label("Join Event", systemImage: "arrow.forward.circle")
+                    }
+                }
+                Button(role: .destructive, action: {
+                    DataHandler.shared.leaveEvent(id: event["id"] ?? "")
+                    mapView.removeAnnotationAndOverlay(annotation: annotations[event["id"] ?? ""]!)
+                    annotations.removeValue(forKey: event["id"] ?? "")
+                }) {
+                    Label("Remove Event", systemImage: "trash.fill")
+                }
+            } label: {
+                VStack {
+                    Spacer()
+                    Image(systemName: "ellipsis")
+                    
+                        .padding(3)
+                    //                    .imageScale(.large)
+                        .rotationEffect(Angle(degrees: 90))
+                    Spacer()
+                }
+            }
+            
+        }
+        .onTapGesture {
+            print("INDEX \(index)")
+            
+//            let comp = event["coords"]?.components(separatedBy: " ") ?? ["0.0", "0.0"]
+            mapView.selectAnnotation(annotations[event["id"] ?? ""]!, animated: true)
+//            mapView.setCenter(CLLocationCoordinate2D(latitude: Double(comp[1]) ?? 0.0, longitude: Double(comp[0]) ?? 0.0), animated: true)
         }
         .frame(alignment: .leading)
         .padding(.horizontal, 15)
@@ -274,55 +448,55 @@ struct MapView: View {
     var body: some View {
         ZStack {
             
-//            Map(coordinateRegion: $manager.region, showsUserLocation: true, annotationItems: real_pins) { place in
-//                MapAnnotation(coordinate: place.coordinate) {
-//                    VStack {
-//                        VStack(spacing:0) {
-//                            Image(systemName: "mappin.circle.fill")
-//                                .font(.title)
-//                                .foregroundColor(.red)
-//                            Image(systemName: "arrowtriangle.down.fill")
-//                                .font(.caption)
-//                                .foregroundColor(.red)
-//                                .offset(x: 0, y: -5)
-//                        }
-//                        Text(place.name)
-//                            .fixedSize(horizontal: false, vertical: true)
-//                            .multilineTextAlignment(.center)
-//                            .frame(maxWidth: 150, alignment: .center)
-//                            .font(.system(size: 14))
-//                    }
-//                }
-//
-//            }
-//
-//            .onTapGesture {
-//                withAnimation {
-//                    isCreatingPin = false
-//                    interact = false
-//                    page = 1
-//                }
-//            }
-//            .opacity(interact ? 0.5 : 1)
-//            .onAppear {
-//                model.getEvents()
-//                model.getIncoming()
-//            }
-//            .edgesIgnoringSafeArea(.all)
+            //            Map(coordinateRegion: $manager.region, showsUserLocation: true, annotationItems: real_pins) { place in
+            //                MapAnnotation(coordinate: place.coordinate) {
+            //                    VStack {
+            //                        VStack(spacing:0) {
+            //                            Image(systemName: "mappin.circle.fill")
+            //                                .font(.title)
+            //                                .foregroundColor(.red)
+            //                            Image(systemName: "arrowtriangle.down.fill")
+            //                                .font(.caption)
+            //                                .foregroundColor(.red)
+            //                                .offset(x: 0, y: -5)
+            //                        }
+            //                        Text(place.name)
+            //                            .fixedSize(horizontal: false, vertical: true)
+            //                            .multilineTextAlignment(.center)
+            //                            .frame(maxWidth: 150, alignment: .center)
+            //                            .font(.system(size: 14))
+            //                    }
+            //                }
+            //
+            //            }
+            //
+            //            .onTapGesture {
+            //                withAnimation {
+            //                    isCreatingPin = false
+            //                    interact = false
+            //                    page = 1
+            //                }
+            //            }
+            //            .opacity(interact ? 0.5 : 1)
+            //            .onAppear {
+            //                model.getEvents()
+            //                model.getIncoming()
+            //            }
+            //            .edgesIgnoringSafeArea(.all)
             
             
-//            MapO(pins: $model.pins, selectedPin: $selectedPin, interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin)
-//                .onTapGesture {
-//                    withAnimation {
-//                        isCreatingPin = false
-//                        interact = false
-//                        page = 1
-//                    }
-//                }
-//                .opacity(interact ? 0.5 : 1)
-//
+            //            MapO(pins: $model.pins, selectedPin: $selectedPin, interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin)
+            //                .onTapGesture {
+            //                    withAnimation {
+            //                        isCreatingPin = false
+            //                        interact = false
+            //                        page = 1
+            //                    }
+            //                }
+            //                .opacity(interact ? 0.5 : 1)
+            //
             
-            CustomMap(annotations: $model.pins,interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin, oldPin: $oldPin, onStart: $onStart, saveCoords: $saveCoords, selectedPin: $model.selectedPin)
+            CustomMap(annotations: $model.pins, interact: $interact, name: $model.name, add: $model.address, isCreatingPin: $isCreatingPin, newPin: $model.newPin, oldPin: $oldPin, onStart: $onStart, saveCoords: $saveCoords, selectedPin: $model.selectedPin, mapView: $model.mapView)
                 .onAppear {
                     onStart = true
                     model.update()
@@ -355,26 +529,27 @@ struct MapView: View {
                         ScrollView {
                             ScrollViewReader { scrollViewProxy in
                                 VStack {
-                                    ForEach (model.eventsString, id: \.self["id"]) { event in
-                                        EventTab(event: event, id: event["id"] ?? "", modelCurrentEventID: $model.selectedEventID)
+                                    ForEach (model.eventsString, id: \.self) { event in
+                                        EventTab(event: event, id: event["id"] ?? "", time: event["time"] ?? "", mapView: $model.mapView, modelCurrentEventID: $model.selectedEventID, annotations: $model.pins)
                                             .frame(maxWidth: .infinity)
                                             .padding(.bottom, 15)
                                             .id(event["id"] ?? "")
                                     }
-                                    
-                                    Text("Incoming Events").padding(.bottom, 18).foregroundColor(Color.white.opacity(0.8))
-                                    ForEach (model.incomingEventsString, id: \.self["id"]) { event in
-                                        EventTab(event: event, id: event["id"] ?? "", modelCurrentEventID: $model.selectedEventID)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.bottom, 18)
-                                            .id(event["id"] ?? "")
+                                    if (model.incomingEventsString.count > 0) {
+                                        Text("Incoming Events").padding(.bottom, 18).foregroundColor(Color.white.opacity(0.8))
+                                        ForEach (model.incomingEventsString, id: \.self["id"]) { event in
+                                            EventTab(event: event, id: event["id"] ?? "", time: event["time"] ?? "", mapView: $model.mapView, modelCurrentEventID: $model.selectedEventID, annotations: $model.pins)
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.bottom, 18)
+                                                .id(event["id"] ?? "")
+                                        }
                                     }
                                     VStack {
                                         Spacer()
                                     }
                                     .frame(height: 500)
                                 }
-                                .onReceive(model.$selectedEventID) { _ in
+                                .onChange(of: model.selectedEventID) { _ in
                                     print(model.selectedEventID)
                                     withAnimation(.easeOut(duration: 0.5)) {
                                         scrollViewProxy.scrollTo(model.selectedEventID,anchor: .top)
@@ -528,7 +703,13 @@ struct MapView: View {
                                 
                                 List {
                                     ForEach(model.searchResults, id: \.self) { friend in
-                                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", id: friend["id"] ?? "", selectable: true, onSelect: {model.invitedFriends.append((friend["username"] ?? "").lowercased())}, onUnselect: {model.invitedFriends = model.invitedFriends.filter{ $0 != (friend["username"] ?? "").lowercased()}}, image: friend["pfp"])
+                                        FriendLabel(name:friend["fullname"] ?? "",username:friend["username"] ?? "", id: friend["id"] ?? "", selectable: true, onSelect: {
+                                            if (!model.invitedFriends.contains(friend["id"] ?? "")) {
+                                                model.invitedFriends.append(friend["id"] ?? "")
+                                            }
+                
+                                            
+                                        }, onUnselect: {model.invitedFriends = model.invitedFriends.filter{ $0 != friend["id"] ?? ""}}, image: friend["pfp"])
                                             .listRowInsets(EdgeInsets())
                                             .listRowSeparator(.hidden)
                                     }
@@ -571,6 +752,9 @@ struct MapView: View {
                                 
                                 DatePicker("",selection: $model.date, in: Date.now..., displayedComponents: [.date, .hourAndMinute])
                                     .datePickerStyle(.graphical)
+                                    .onAppear {
+                                        model.date = Date()
+                                    }
                                 
                                 
                                 
