@@ -331,7 +331,7 @@ struct FriendsPage: View {
                                   print("Error signing out: %@", signOutError)
                                 }
                             }) {
-                                Label("Sign Out", systemImage: "square.and.pencil")
+                                Label("Sign Out", systemImage: "arrow.turn.down.left")
                             }
                         } label: {
 
@@ -552,8 +552,10 @@ struct FriendsPage: View {
             
             
             if model.isEditingProfile {
+               
                 ChangeProfile()
                     .transition(.move(edge: .bottom))
+                
             }
             
         }.onTapGesture {

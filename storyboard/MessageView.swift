@@ -18,6 +18,8 @@ extension View {
 
 
 class ChatLogViewModel: ObservableObject {
+    
+    @Published var isFriend = true
     @Published var chatName = ""
     @Published var chatMessages = [ChatMessage]()
     
@@ -32,6 +34,7 @@ class ChatLogViewModel: ObservableObject {
         chatName = DataHandler.shared.currentChatName
         chatMessages = DataHandler.shared.chatMessages
         count = chatMessages.count
+        isFriend = DataHandler.shared.isFriendMessage
     }
 }
 
@@ -79,13 +82,19 @@ struct MessageView: View {
                             .padding(.horizontal, 22)
                         HStack {
                             Spacer()
+                            if model.isFriend {
                             Image(systemName: "person.2.fill")
                                 .imageScale(.large)
-                                .onTapGesture {
-                                    withAnimation {
-                                        attendingView = true
+                                .opacity(0)
+                            } else {
+                                Image(systemName: "person.2.fill")
+                                    .imageScale(.large)
+                                    .onTapGesture {
+                                        withAnimation {
+                                            attendingView = true
+                                        }
                                     }
-                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 20)

@@ -357,7 +357,7 @@ class DataHandler: NSObject, ObservableObject {
             onComplete()
         })
     }
-    
+
     func gets(handler: [[String:String]]?) {
         if self.currentUser?["display"] != nil {
             let privRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("friends").getDocuments() { (querySnapshot, err) in
@@ -408,6 +408,30 @@ class DataHandler: NSObject, ObservableObject {
                 }
             }
         }
+    }
+    
+    func updateFriends() {
+        let data = [
+            "username":self.currentUser!["username"],
+            "display": self.currentUser!["display"],
+            "fullname":self.currentUser!["fullname"],
+            "pfp": self.currentUser!["pfp"],
+            "id": self.currentUser!["id"]
+        ]
+        
+        for friend in friends {
+            FirebaseManager.shared.db.collection("users").document(friend["id"]!).collection("friends").document(self.uid ?? "").setData(data as [String : Any])
+        }
+        
+        for friend in incFriendRequests {
+            FirebaseManager.shared.db.collection("users").document(friend["id"]!).collection("outgoingFriends").document(self.uid ?? "").setData(data as [String : Any])
+        }
+        
+        for friend in outFriendRequests {
+            FirebaseManager.shared.db.collection("users").document(friend["id"]!).collection("incomingFriends").document(self.uid ?? "").setData(data as [String : Any])
+        }
+        
+        self.onFinishEditing()
     }
     
     func addFriend(username: String, completionhandler: @escaping () -> Void) {

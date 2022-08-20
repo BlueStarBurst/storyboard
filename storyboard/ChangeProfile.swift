@@ -12,12 +12,81 @@ import FirebaseStorage
 import FirebaseCore
 import FirebaseFirestore
 import SDWebImageSwiftUI
+import Combine
 
+extension Publishers {
+    // 1.
+    static var keyboardHeight: AnyPublisher<CGFloat, Never> {
+        // 2.
+        let willShow = NotificationCenter.default.publisher(for: UIApplication.keyboardWillShowNotification)
+            .map { $0.keyboardHeight }
+        
+        let willHide = NotificationCenter.default.publisher(for: UIApplication.keyboardWillHideNotification)
+            .map { _ in CGFloat(0) }
+        
+        // 3.
+        return MergeMany(willShow, willHide)
+            .eraseToAnyPublisher()
+    }
+}
 
+extension UIResponder {
+    static var currentFirstResponder: UIResponder? {
+        _currentFirstResponder = nil
+        UIApplication.shared.sendAction(#selector(UIResponder.findFirstResponder(_:)), to: nil, from: nil, for: nil)
+        return _currentFirstResponder
+    }
+    
+    private static weak var _currentFirstResponder: UIResponder?
+    
+    @objc private func findFirstResponder(_ sender: Any) {
+        UIResponder._currentFirstResponder = self
+    }
+    
+    var globalFrame: CGRect? {
+        guard let view = self as? UIView else { return nil }
+        return view.superview?.convert(view.frame, to: nil)
+    }
+}
+
+struct KeyboardAdaptive: ViewModifier {
+    @State private var bottomPadding: CGFloat = 0
+    
+    func body(content: Content) -> some View {
+        // 1.
+        GeometryReader { geometry in
+            content
+                .padding(.bottom, self.bottomPadding)
+            // 2.
+                .onReceive(Publishers.keyboardHeight) { keyboardHeight in
+                    // 3.
+                    let keyboardTop = geometry.frame(in: .global).height - keyboardHeight
+                    // 4.
+                    let focusedTextInputBottom = UIResponder.currentFirstResponder?.globalFrame?.maxY ?? 0
+                    // 5.
+                    self.bottomPadding = max(0, focusedTextInputBottom - keyboardTop - geometry.safeAreaInsets.bottom + 275)
+                }
+            // 6.
+                .animation(.easeOut(duration: 0.16))
+        }
+    }
+}
+
+extension View {
+    func keyboardAdaptive() -> some View {
+        ModifiedContent(content: self, modifier: KeyboardAdaptive())
+    }
+}
+
+extension Notification {
+    var keyboardHeight: CGFloat {
+        return (userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect)?.height ?? 0
+    }
+}
 
 class ChangeProfileViewModel: ObservableObject {
-    @Published var fullname = ""
-    @Published var username: String = ""
+    @Published var fullname = DataHandler.shared.currentUser?["fullname"] as! String
+    @Published var username: String = DataHandler.shared.currentUser?["display"] as! String
     @Published var finished = false
     @Published var phoneNumber = ""
     
@@ -25,9 +94,12 @@ class ChangeProfileViewModel: ObservableObject {
     @Published var errorMsg = "Error"
     
     @Published var image: UIImage?
-    @Published var imgString: String = ""
+    @Published var imgString: String = DataHandler.shared.currentUser?["pfp"] as! String
+    
+    @Published var disabled: Bool = false
     
     func update() {
+        self.disabled = false
         self.fullname = DataHandler.shared.currentUser?["fullname"] as! String
         self.username = DataHandler.shared.currentUser?["display"] as! String
         self.imgString = DataHandler.shared.currentUser?["pfp"] as! String
@@ -77,6 +149,8 @@ class ChangeProfileViewModel: ObservableObject {
     
     
     func sendSubmit() {
+        self.disabled = true
+        
         let user = Auth.auth().currentUser
         guard let uid = user?.uid else {
             return
@@ -115,11 +189,7 @@ class ChangeProfileViewModel: ObservableObject {
                 return
             }
             
-            let privRef = FirebaseManager.shared.db.collection("users").document(uid).collection("private").document("data")
-            
-            //            FirebaseManager.shared.db.collection("users").document(uid).collection("friends").document("friends")
-            //            FirebaseManager.shared.db.collection("users").document(uid).collection("incomingFriends").document("incomingFriends")
-            //            FirebaseManager.shared.db.collection("users").document(uid).collection("outgoingFriends").document("outgoingFriends")
+            DataHandler.shared.updateFriends()
             
         }
         
@@ -174,6 +244,7 @@ class ChangeProfileViewModel: ObservableObject {
                 
                 //                    self.loginStatusMessage = "Successfully stored image with url: \(url?.absoluteString ?? "")"
                 DataHandler.shared.load(onComplete: {
+                    DataHandler.shared.updateFriends()
                     self.isUserCreated(success: true)
                 })
                 
@@ -189,6 +260,8 @@ struct ChangeProfile: View {
         case myField
     }
     
+    @State private var keyboardHeight: CGFloat = 0
+    
     @StateObject var model = ChangeProfileViewModel()
     @State var image: UIImage?
     @State var shouldShowImagePicker = false
@@ -198,106 +271,140 @@ struct ChangeProfile: View {
     @FocusState private var focusedField: Field?
     
     var body: some View {
-        VStack {
-            VStack {
-                ZStack {
-                    Button {
-                        focusedField = nil
-                        shouldShowImagePicker.toggle()
-                    } label: {
-                        VStack {
-                            if let image = model.image {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 150, height: 150)
-                                    .cornerRadius(75)
-                            } else {
-                                Image(systemName: "person.fill")
-                                    .font(.system(size: 75))
-                                    .padding()
-                                    .foregroundColor(Color(.label))
+        HStack {
+            Spacer()
+            ZStack{
+                VStack {
+                    Spacer()
+                    
+                    VStack {
+                        
+                        ZStack {
+                            Button {
+                                focusedField = nil
+                                shouldShowImagePicker.toggle()
+                            } label: {
+                                VStack {
+                                    if let image = model.image {
+                                        Image(uiImage: image)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 150, height: 150)
+                                            .cornerRadius(75)
+                                    } else if let image = model.imgString {
+                                        WebImage(url:URL(string:image))
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 150, height: 150)
+                                            .cornerRadius(75)
+                                    } else {
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 75))
+                                            .padding()
+                                            .foregroundColor(Color(.label))
+                                    }
+                                }
+                                .overlay(RoundedRectangle(cornerRadius: 75)
+                                    .stroke(Color.black, lineWidth: 3)
+                                )
+                            }
+                            
+                        }.padding(.bottom,25)
+                        Text("Your Real Name (What your friends see)")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        TextField("Real Name", text:$model.fullname)
+                            .focused($focusedField, equals: .myField)
+                            .padding(.vertical,20)
+                            .padding(.horizontal)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(model.fullname == "" ? Color.gray :
+                                                Color.pink,lineWidth: 1.5
+                                           )
+                            )
+                        Text("Username (How your friends add you)")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 10)
+                        TextField("User Name", text:$model.username)
+                            .focused($focusedField, equals: .myField)
+                            .onChange(of: model.username) {
+                                let change = $0
+                                model.checkUser()
+                            }
+                            .padding(.vertical,20)
+                            .padding(.horizontal)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(model.username == "" ? Color.gray :
+                                                Color.pink,lineWidth: 1.5
+                                           )
+                            )
+                        
+                        if model.error {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                Text(model.errorMsg)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(.top, 20)
+                            
+                        }
+                        
+                        Button(action: {
+                            model.sendSubmit()
+                            focusedField = nil
+                        }, label: {
+                            Text("update account")
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.vertical)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.pink)
+                                .cornerRadius(8)
+                        })
+                        .disabled(model.fullname == "" || model.username == "" || model.error || model.disabled)
+                        .opacity(model.fullname == "" || model.username == "" || model.error ? 0.6 : 1)
+                        .padding(.top, 10)
+                    }
+                    .padding(.horizontal, 30)
+                    
+                    .fullScreenCover(isPresented: $shouldShowImagePicker, onDismiss: nil) {
+                        ImagePicker(image: $model.image)
+                            .ignoresSafeArea()
+                    }
+                    
+                    
+                    Spacer()
+                }
+                .keyboardAdaptive()
+                VStack {
+                    HStack {
+                        Image(systemName: "chevron.backward").onTapGesture {
+                            withAnimation {
+                                DataHandler.shared.onFinishEditing()
                             }
                         }
-                        .overlay(RoundedRectangle(cornerRadius: 75)
-                            .stroke(Color.black, lineWidth: 3)
-                        )
-                    }
-                    
-                }.padding(.bottom,25)
-                Text("Your Real Name (What your friends see)")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                TextField("Real Name", text:$model.fullname)
-                    .focused($focusedField, equals: .myField)
-                    .padding(.vertical,20)
-                    .padding(.horizontal)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(model.fullname == "" ? Color.gray :
-                                        Color.pink,lineWidth: 1.5
-                                   )
-                    )
-                Text("Username (How your friends add you)")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 10)
-                TextField("User Name", text:$model.username)
-                    .focused($focusedField, equals: .myField)
-                    .onChange(of: model.username) {
-                        let chhange = $0
-                        model.checkUser()
-                    }
-                    .padding(.vertical,20)
-                    .padding(.horizontal)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(model.username == "" ? Color.gray :
-                                        Color.pink,lineWidth: 1.5
-                                   )
-                    )
-                
-                if model.error {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                        Text(model.errorMsg)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding(.top, 20)
-                    
-                }
-                
-                Button(action: {
-                    model.sendSubmit()
-                    focusedField = nil
-                }, label: {
-                    Text("create account")
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(.vertical)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.pink)
-                        .cornerRadius(8)
-                })
-                .disabled(model.fullname == "" || model.username == "" || model.error)
-                .opacity(model.fullname == "" || model.username == "" || model.error ? 0.6 : 1)
-                .padding(.top, 10)
+                        .imageScale(.large)
+                        Spacer()
+                    }.padding()
+                    Spacer()
+                }.padding()
             }
-            .padding(.horizontal, 30)
-            .offset(y: -keyboardResponder.currentHeight*0.9)
-            .fullScreenCover(isPresented: $shouldShowImagePicker, onDismiss: nil) {
-                ImagePicker(image: $model.image)
-                    .ignoresSafeArea()
-            }
-            .onTapGesture {
-                focusedField = nil
-            }
+            Spacer()
         }
-        .padding(.bottom, -keyboardResponder.currentHeight*0.9)
+        .background(Color.black.onTapGesture {
+            focusedField = nil
+        })
+        .transition(.move(edge: .bottom))
+        .onAppear {
+            model.update()
+        }
     }
     
 }
 
 struct ChangeProfile_Previews: PreviewProvider {
     static var previews: some View {
-        CreateProfile()
+        ChangeProfile()
     }
 }
