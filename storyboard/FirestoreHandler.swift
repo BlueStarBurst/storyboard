@@ -49,6 +49,9 @@ class DataHandler: NSObject, ObservableObject {
     var events: [String:[String:Any]] = [:]
     var incomingEvents: [String:[String:Any]] = [:]
     
+    var attendingEvent: [[String:String]] = []
+    var invitingEvent: [[String:String]] = []
+    
     var outListener: ListenerRegistration?
     var incListener: ListenerRegistration?
     var friendListener: ListenerRegistration?
@@ -62,6 +65,7 @@ class DataHandler: NSObject, ObservableObject {
     var friendPageUpdate : () -> Void = {}
     var updateMessage: () -> Void = {}
     var messageViewUpdate: () -> Void = {}
+    var onFinishEditing: () -> Void = {}
     
     func callAllUpdates() {
         self.eventPageUpdate()
@@ -685,6 +689,22 @@ class DataHandler: NSObject, ObservableObject {
         self.currentEvent = id
         
         self.currentChatName = self.events[id!]?["name"] as! String
+        
+        self.attendingEvent = []
+        for ids in self.events[id!]?["attending"] as! [String] {
+            getUser(id: ids, completionHandler: { user in
+                self.attendingEvent.append(self.niceString(map: user!))
+                self.messageViewUpdate()
+            })
+        }
+        
+        self.invitingEvent = []
+        for ids in self.events[id!]?["invited"] as! [String] {
+            getUser(id: ids, completionHandler: { user in
+                self.invitingEvent.append(self.niceString(map: user!))
+                self.messageViewUpdate()
+            })
+        }
         
         self.getMessages()
         self.showMessages()

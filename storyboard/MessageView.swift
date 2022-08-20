@@ -21,10 +21,14 @@ class ChatLogViewModel: ObservableObject {
     @Published var chatName = ""
     @Published var chatMessages = [ChatMessage]()
     
+    @Published var attendingEvent: [[String: String]] = DataHandler.shared.attendingEvent
+    @Published var invitingEvent: [[String: String]] = DataHandler.shared.invitingEvent
+    
     @Published var count: Int = 0
     
     func update() {
-        
+        attendingEvent = DataHandler.shared.attendingEvent
+        invitingEvent = DataHandler.shared.invitingEvent
         chatName = DataHandler.shared.currentChatName
         chatMessages = DataHandler.shared.chatMessages
         count = chatMessages.count
@@ -54,84 +58,92 @@ struct MessageView: View {
     }
     
     @State var lastUser = ""
+    @State var isBack = false
+    @State var attendingView = false
     
     var body: some View {
-        VStack {
-            HStack {
-                ZStack {
-                    HStack {
-                        Image(systemName: "chevron.backward")
-                            .imageScale(.large)
-                            .onTapGesture {
-                                DataHandler.shared.hideMessages()
-                            }
-                        Spacer()
+        ZStack {
+            VStack {
+                HStack {
+                    ZStack {
+                        HStack {
+                            Image(systemName: "chevron.backward")
+                                .imageScale(.large)
+                                .onTapGesture {
+                                    DataHandler.shared.hideMessages()
+                                }
+                            Spacer()
+                        }
+                        Text(model.chatName)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 22)
+                        HStack {
+                            Spacer()
+                            Image(systemName: "person.2.fill")
+                                .imageScale(.large)
+                                .onTapGesture {
+                                    withAnimation {
+                                        attendingView = true
+                                    }
+                                }
+                        }
                     }
-                    Text(model.chatName)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 22)
-                    HStack {
-                        Spacer()
-                        Image(systemName: "person.2.fill")
-                            .imageScale(.large)
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 10)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
-            }
-            
-//            VStack {
-//                Text(" ")
-//                Spacer()
-//            }
-//            .frame(maxWidth: .infinity)
-//            .background(Color.black)
-//            .padding(.vertical, 10)
-            
-            
-            ScrollView {
-                ScrollViewReader { scrollViewProxy in
-                    VStack {
-                        if model.chatMessages.count > 0 {
-                            ForEach(0...model.chatMessages.count-1, id: \.self) { num in
-                                let thisUser = model.chatMessages[num]
-                                if num < model.chatMessages.count-1 {
-                                    let nextUser = model.chatMessages[num + 1]
-                                    if (nextUser.fromId == thisUser.fromId) {
-                                        TextBubble(message: thisUser, isUnique: false)
+                
+                //            VStack {
+                //                Text(" ")
+                //                Spacer()
+                //            }
+                //            .frame(maxWidth: .infinity)
+                //            .background(Color.black)
+                //            .padding(.vertical, 10)
+                
+                
+                ScrollView {
+                    ScrollViewReader { scrollViewProxy in
+                        VStack {
+                            if model.chatMessages.count > 0 {
+                                ForEach(0...model.chatMessages.count-1, id: \.self) { num in
+                                    let thisUser = model.chatMessages[num]
+                                    if num < model.chatMessages.count-1 {
+                                        let nextUser = model.chatMessages[num + 1]
+                                        if (nextUser.fromId == thisUser.fromId) {
+                                            TextBubble(message: thisUser, isUnique: false)
+                                        } else {
+                                            TextBubble(message: thisUser, isUnique: true)
+                                        }
                                     } else {
                                         TextBubble(message: thisUser, isUnique: true)
                                     }
-                                } else {
-                                    TextBubble(message: thisUser, isUnique: true)
                                 }
                             }
-                        }
-                        HStack { Spacer() }
-                            .id(Self.emptyScrollToString)
+                            HStack { Spacer() }
+                                .id(Self.emptyScrollToString)
                             
-                    }
-                    .onReceive(model.$count) { _ in
-                        withAnimation(.easeOut(duration: 0.5)) {
-                            scrollViewProxy.scrollTo(Self.emptyScrollToString,anchor: .bottom)
                         }
+                        .onReceive(model.$count) { _ in
+                            withAnimation(.easeOut(duration: 0.5)) {
+                                scrollViewProxy.scrollTo(Self.emptyScrollToString,anchor: .bottom)
+                            }
+                        }
+                        .padding(.top, 8)
                     }
-                    .padding(.top, 8)
+                    
+                    
                 }
+                .background(Color(.init(white:0.10, alpha: 1)))
                 
-                
-            }
-            .background(Color(.init(white:0.10, alpha: 1)))
-            
-            HStack {
-                Image(systemName: "camera.fill")
-                    .imageScale(.large)
-                
-                
+                HStack {
+                    Image(systemName: "camera.fill")
+                        .imageScale(.large)
+                    
+                    
                     ScrollView {
                         ZStack(alignment: .topLeading) {
                             Color(red: 46.0/255, green: 46.0/255, blue: 46.0/255)
-//                            Color.gray
+                            //                            Color.gray
                                 .opacity(1)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                             
@@ -144,7 +156,7 @@ struct MessageView: View {
                                 .multilineTextAlignment(.leading)
                                 .padding(9)
                                 .opacity(1)
-                        
+                            
                         }
                         .overlay(GeometryReader { geo in
                             Color.clear.opacity(0).onAppear {
@@ -154,38 +166,106 @@ struct MessageView: View {
                     }
                     .frame(maxHeight: contentSize.height)
                     
+                    
+                    
+                    Image(systemName: "paperplane.fill")
+                        .opacity(message != "" && message != nil ? 1 : 0.5)
+                        .frame(width: 20, height: 20)
+                        .padding(.vertical)
+                        .padding(.horizontal, 10)
+                        .background(Color.pink.opacity(message != "" && message != nil ? 1 : 0.5))
+                        .clipShape(Circle())
+                        .onTapGesture {
+                            if (message != "" && message != nil) {
+                                DataHandler.shared.sendMessage(message: message ?? "")
+                                message = ""
+                            }
+                        }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
+                .padding(.top, 5)
                 
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(red: 40.0/255, green: 40.0/255, blue: 40.0/255))
+            .onTapGesture {
+                self.hideKeyboard()
+                focusedField = nil
+            }
+            .animation(.easeInOut)
+            .transition(.move(edge: .bottom))
+            .onAppear {
+                DataHandler.shared.messageViewUpdate = model.update
+                model.update()
+            }
+            
+            if (attendingView == true) {
                 
-                Image(systemName: "paperplane.fill")
-                    .opacity(message != "" && message != nil ? 1 : 0.5)
-                    .frame(width: 20, height: 20)
-                    .padding(.vertical)
-                    .padding(.horizontal, 10)
-                    .background(Color.pink.opacity(message != "" && message != nil ? 1 : 0.5))
-                    .clipShape(Circle())
+                HStack {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                        }
+                        Spacer()
+                    }
+                    .frame(width: 80)
+                    
+                    .background(isBack ? Color.black.opacity(0.02) : Color.clear)
+                    
                     .onTapGesture {
-                        if (message != "" && message != nil) {
-                            DataHandler.shared.sendMessage(message: message ?? "")
-                            message = ""
+                        withAnimation {
+                            isBack = false
                         }
                     }
+                    
+                    Spacer()
+                    
+                    if (isBack) {
+                        VStack {
+                            ScrollView {
+                                Text("Attending")
+                                ForEach(model.attendingEvent, id: \.self) { friend in
+                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", update: model.update, image: friend["pfp"])
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 5)
+                                        .listRowBackground(Color.black)
+                                        .listRowSeparator(.hidden)
+                                }
+                                .listStyle(PlainListStyle())
+                                .frame(maxWidth: .infinity)
+                                Text("Invited")
+                                ForEach(model.invitingEvent, id: \.self) { friend in
+                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", update: model.update, image: friend["pfp"])
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 5)
+                                        .listRowBackground(Color.black)
+                                        .listRowSeparator(.hidden)
+                                }
+                                .listStyle(PlainListStyle())
+                                .frame(maxWidth: .infinity)
+                                Spacer()
+                            }
+                        }
+                        .padding()
+                        .background(Color.black)
+                        .transition(.move(edge: .trailing))
+                        .onDisappear {
+                            withAnimation{
+                                attendingView = false
+                            }
+                        }
+                    }
+                }
+                .background(isBack ? Color.black.opacity(0.5) : Color.clear)
+                .onAppear {
+                    withAnimation {
+                        isBack = true
+                    }
+                }
+                
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 10)
-            .padding(.top, 5)
-            
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 40.0/255, green: 40.0/255, blue: 40.0/255))
-        .onTapGesture {
-            self.hideKeyboard()
-            focusedField = nil
-        }
-        .animation(.easeInOut)
-        .transition(.move(edge: .bottom))
-        .onAppear {
-            DataHandler.shared.messageViewUpdate = model.update
-            model.update()
         }
     }
     

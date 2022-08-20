@@ -18,6 +18,7 @@
 		58676425288CBE2100667C01 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58676424288CBE2000667C01 /* MapKit.framework */; };
 		587313DE28A9A17100F945CD /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 587313DD28A9A17100F945CD /* MessageView.swift */; };
 		5876E05028A5770E004E5332 /* FirestoreHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5876E04F28A5770E004E5332 /* FirestoreHandler.swift */; };
+		58BAC31E28B0227600E144E4 /* ChangeProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58BAC31D28B0227600E144E4 /* ChangeProfile.swift */; };
 		644B7FFE287154E500B8383B /* storyboardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644B7FFD287154E500B8383B /* storyboardApp.swift */; };
 		644B8000287154E500B8383B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644B7FFF287154E500B8383B /* ContentView.swift */; };
 		644B8002287154E700B8383B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 644B8001287154E700B8383B /* Assets.xcassets */; };
@@ -55,6 +56,7 @@
 		58676424288CBE2000667C01 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		587313DD28A9A17100F945CD /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
 		5876E04F28A5770E004E5332 /* FirestoreHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreHandler.swift; sourceTree = "<group>"; };
+		58BAC31D28B0227600E144E4 /* ChangeProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeProfile.swift; sourceTree = "<group>"; };
 		644B7FFA287154E500B8383B /* storyboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = storyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		644B7FFD287154E500B8383B /* storyboardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = storyboardApp.swift; sourceTree = "<group>"; };
 		644B7FFF287154E500B8383B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 				58557C94288DF724007C70E6 /* BetterMap.swift */,
 				6495C302288081C200A2F4B4 /* LocationManager.swift */,
 				648CA82F287B33AF000D5B3B /* CreateProfile.swift */,
+				58BAC31D28B0227600E144E4 /* ChangeProfile.swift */,
 				5876E04F28A5770E004E5332 /* FirestoreHandler.swift */,
 				648CA82A287A8AC6000D5B3B /* AuthView.swift */,
 				644B7FFF287154E500B8383B /* ContentView.swift */,
@@ -335,6 +338,7 @@
 				644B8000287154E500B8383B /* ContentView.swift in Sources */,
 				6495C3012880759A00A2F4B4 /* MapView.swift in Sources */,
 				644B7FFE287154E500B8383B /* storyboardApp.swift in Sources */,
+				58BAC31E28B0227600E144E4 /* ChangeProfile.swift in Sources */,
 				6495C303288081C200A2F4B4 /* LocationManager.swift in Sources */,
 				587313DE28A9A17100F945CD /* MessageView.swift in Sources */,
 				648CA82B287A8AC6000D5B3B /* AuthView.swift in Sources */,

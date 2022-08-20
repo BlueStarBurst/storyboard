@@ -32,6 +32,8 @@ class FriendsPageViewModel: ObservableObject {
     @Published var outgoingFriends: [[String: String]] = DataHandler.shared.outFriendRequests
     @Published var searchResults: [[String: String]] = [[:]]
     
+    @Published var isEditingProfile: Bool = false
+    
     func checkUser() {
         
         if searchUser == "" {
@@ -72,6 +74,12 @@ class FriendsPageViewModel: ObservableObject {
         
     }
     
+    func doneEditing() {
+        withAnimation {
+            self.isEditingProfile = false
+        }
+    }
+    
     func update() {
         withAnimation {
             self.friends = DataHandler.shared.friends
@@ -99,6 +107,8 @@ var CurrentUser: User = User(name: "", user: "")
 var loaded = false
 
 struct FriendLabel: View {
+    
+    
     
     let name: String
     let username: String
@@ -269,23 +279,13 @@ struct FriendsPage: View {
     @ObservedObject var keyboardResponder = KeyboardResponder()
     
     @State private var requestPage = false
+    @State private var change = false
     
     @State private var friendSearch: String = ""
     var body: some View {
         ZStack{
             VStack {
-//                Button(action: {try! Auth.auth().signOut()}, label: {
-//                    Text("sign out")
-//                        .fontWeight(.bold)
-//                        .foregroundColor(.white)
-//                        .padding(.vertical)
-//                        .frame(maxWidth: .infinity)
-//                        .background(Color.pink)
-//                        .cornerRadius(8)
-//                })
-//                .padding(.top,10)
-//                .padding(.bottom,10)
-//                .padding(.horizontal)
+//
                 
                 if DataHandler.shared.currentUser != nil && DataHandler.shared.currentUser!["display"] as! String != "" {
                     
@@ -315,9 +315,33 @@ struct FriendsPage: View {
                             }
                         }
                         Spacer()
-                        Image(systemName: "square.and.pencil")
-                            .imageScale(.large)
-                            .font(.system(size: 20))
+                        Menu {
+                            Button(action: {
+                                withAnimation {
+                                    model.isEditingProfile = true
+                                }
+                            }) {
+                                Label("Edit Profile", systemImage: "square.and.pencil")
+                            }
+                            Button(role: .destructive, action: {
+                                do {
+                                    try Auth.auth().signOut()
+                                    exit(-1)
+                                } catch let signOutError as NSError {
+                                  print("Error signing out: %@", signOutError)
+                                }
+                            }) {
+                                Label("Sign Out", systemImage: "square.and.pencil")
+                            }
+                        } label: {
+
+                                Image(systemName: "gearshape.fill")
+                                
+                                    .padding(3)
+                                    .imageScale(.large)
+
+
+                        }
                     }
                     .padding([.leading,.trailing],20)
                     .padding([.top],6)
@@ -347,6 +371,7 @@ struct FriendsPage: View {
                             Text("Requests")
                                 .padding(.horizontal, 10)
                                 .onTapGesture {
+                                    change = true
                                     requestPage = true
                                 }
                         }
@@ -380,7 +405,7 @@ struct FriendsPage: View {
                             }
                             .listStyle(PlainListStyle())
                             .animation(.easeInOut)
-                            .transition(load == true ? .inOutLeading : .opacity)
+                            .transition(load == true && change == true ? .inOutLeading : .opacity)
                             //                Spacer()
                         }
                     } else {
@@ -421,6 +446,7 @@ struct FriendsPage: View {
             }
             .onAppear {
                 DataHandler.shared.friendPageUpdate = model.update
+                DataHandler.shared.onFinishEditing = model.doneEditing
                 model.update()
             }
             
@@ -521,14 +547,22 @@ struct FriendsPage: View {
                     }
                 }
                 
+                
             }
             
             
-            
+            if model.isEditingProfile {
+                ChangeProfile()
+                    .transition(.move(edge: .bottom))
+            }
             
         }.onTapGesture {
             focusedField = nil
         }
+        
+        
+        
+        
     }
 }
 

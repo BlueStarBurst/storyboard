@@ -92,7 +92,7 @@ class CreateProfileViewModel: ObservableObject {
         
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
-        FirebaseManager.shared.db.collection("users").whereField("username", isEqualTo: self.username).getDocuments() { (querySnapshot, err) in
+        FirebaseManager.shared.db.collection("users").whereField("username", isEqualTo: self.username.lowercased()).getDocuments() { (querySnapshot, err) in
             print(err)
             if (querySnapshot?.count ?? 1 > 0) {
                 self.nameTaken(decoded: true)
