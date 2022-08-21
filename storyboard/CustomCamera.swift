@@ -313,12 +313,12 @@ struct CaptureButtonView: View {
             }
             Image(systemName: "video").font(.largeTitle)
                 .padding(30)
-                .background(Color.red)
+                .background(Color.pink)
                 .foregroundColor(.white)
                 .clipShape(Circle())
                 .overlay(
                     Circle()
-                        .stroke(Color.red)
+                        .stroke(Color.pink)
                         .scaleEffect(animationAmount)
                         .opacity(Double(2 - animationAmount))
                         .animation(Animation.easeOut(duration: 1)
@@ -330,6 +330,11 @@ struct CaptureButtonView: View {
             }.onTapGesture {
                 self.didTapCapture = true
             }
+            Button(action: {}) {
+                Label("", systemImage: "photo.fill.on.rectangle.fill")
+                    .foregroundColor(Color.white)
+                    .font(.largeTitle)
+            }.opacity(0)
         }.fullScreenCover(isPresented: $shouldShowImagePicker, onDismiss: nil) {
             ImagePicker(image: $image)
                 .ignoresSafeArea()
