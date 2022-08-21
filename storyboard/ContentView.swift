@@ -22,87 +22,72 @@ struct ContentView: View {
     @State private var mapView = false
     @State private var headerSize = CGSize()
     
+    @State var isTakingPicture = false
+    
     //.offset(y: mapView ? -100 : 0)
     //.animation(.easeInOut, value: mapView)
     
-    @State private var blogList = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r"]
+    
     
     var body: some View {
-        TabView(selection:$page) {
-            ZStack{
-                
-                List(blogList) { post in
-                    Text(post)
-                        .padding(15)
-                        .listRowBackground(Color.black)
-                        .listRowSeparator(.hidden)
+        ZStack {
+            TabView(selection:$page) {
+                ZStack{
+                    FeedView(isTakingPicture: $isTakingPicture)
+                }.tag(0)
+                ZStack{
+                    
+                    ZStack {
+                        MapView()
+                            .ignoresSafeArea()
                         
-                }
-                .padding([.top], 25)
-                .listStyle(PlainListStyle())
-                
-                VStack {
-                    HStack {
-                        Spacer()
-                        Text("feed")
+                        HStack {
+                            Rectangle()
+                                .ignoresSafeArea()
+                                .frame(maxWidth: 26, maxHeight: .infinity)
+                                .opacity(0.02)
+                                .foregroundColor(Color.black)
+                            Spacer()
+                            Rectangle()
+                                .ignoresSafeArea()
+                                .frame(maxWidth: 26, maxHeight: .infinity)
+                                .opacity(0.02)
+                                .foregroundColor(Color.black)
+                        }
+                        
+                        //                    if (!mapView) {
+                        //                    Rectangle()
+                        //                        .foregroundColor(Color.black.opacity(0.5))
+                        //                        .onTapGesture {
+                        //                            mapView = true
+                        //                        }
+                        //                        .ignoresSafeArea()
+                        //                    }
+                        
+                        
+                        
+                    }
+                    VStack{
+                        HStack {
+                            Spacer()
+                            Text("live")
+                            Spacer()
+                        }
+                        
+                        .padding([.bottom , .trailing , .leading ], 15)
+                        .background(Color.black)
+                        
                         Spacer()
                     }
-                    .padding([.bottom , .trailing , .leading ], 15)
-                    .background(Color.black)
-                    Spacer()
-                }
-                
-            }.tag(0)
-            ZStack{
-                
-                ZStack {
-                    MapView()
-                        .ignoresSafeArea()
-                    
-                    HStack {
-                        Rectangle()
-                            .ignoresSafeArea()
-                            .frame(maxWidth: 26, maxHeight: .infinity)
-                            .opacity(0.02)
-                            .foregroundColor(Color.black)
-                        Spacer()
-                        Rectangle()
-                            .ignoresSafeArea()
-                            .frame(maxWidth: 26, maxHeight: .infinity)
-                            .opacity(0.02)
-                            .foregroundColor(Color.black)
-                    }
-                    
-//                    if (!mapView) {
-//                    Rectangle()
-//                        .foregroundColor(Color.black.opacity(0.5))
-//                        .onTapGesture {
-//                            mapView = true
-//                        }
-//                        .ignoresSafeArea()
-//                    }
-                    
-                    
-                    
-                }
-                VStack{
-                    HStack {
-                        Spacer()
-                        Text("live")
-                        Spacer()
-                    }
-                    
-                    .padding([.bottom , .trailing , .leading ], 15)
-                    .background(Color.black)
-
-                    Spacer()
-                }
-            }.tag(1)
-            FriendsPage()
-                .tag(2)
-        }.tabViewStyle(.page(indexDisplayMode: .never))
-            .ignoresSafeArea()
-            
+                }.tag(1)
+                FriendsPage()
+                    .tag(2)
+            }.tabViewStyle(.page(indexDisplayMode: .never))
+                .ignoresSafeArea()
+            if isTakingPicture == true {
+                CustomCameraPhotoView(isTakingPicture: $isTakingPicture)
+            }
+        }
     }
 }
 

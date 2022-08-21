@@ -43,8 +43,11 @@ class DataHandler: NSObject, ObservableObject {
     var isFriendMessage = false
     
     @Published var friends: [[String:String]] = []
+    @Published var friendsDict: [String:[String:Any]] = [:]
     @Published var incFriendRequests: [[String:String]] = []
     @Published var outFriendRequests: [[String:String]] = []
+    
+    var feed: [[String:Any]] = []
     
     var events: [String:[String:Any]] = [:]
     var incomingEvents: [String:[String:Any]] = [:]
@@ -58,6 +61,7 @@ class DataHandler: NSObject, ObservableObject {
     var eventsListener: ListenerRegistration?
     var incEventsListener: ListenerRegistration?
     var chatListener: ListenerRegistration?
+    var postListener: ListenerRegistration?
     
     var uid: String?
     
@@ -66,6 +70,7 @@ class DataHandler: NSObject, ObservableObject {
     var updateMessage: () -> Void = {}
     var messageViewUpdate: () -> Void = {}
     var onFinishEditing: () -> Void = {}
+    var feedUpdate: () -> Void = {}
     
     func callAllUpdates() {
         self.eventPageUpdate()
@@ -88,17 +93,7 @@ class DataHandler: NSObject, ObservableObject {
         
         self.getSelf(onComplete: {
             onComplete()
-            //            Messaging.messaging().token { token, error in
-            //                if let error = error {
-            //                    print("Error fetching FCM registration token: \(error)")
-            ////                    print(error)
-            //                } else if let token = token {
-            //                    print("TOKEN")
-            //                    print(token)
-            //                    print("END")
-            //                }
-            //            }
-            //            self.getOutgoing()
+
             self.updateToken()
             self.setupListeners()
         })
@@ -185,10 +180,12 @@ class DataHandler: NSObject, ObservableObject {
                 }
                 snapshot.documentChanges.forEach { diff in
                     if (diff.type == .added) {
+                        let dat = diff.document.data()
                         print("ADDED FRIEND")
                         print(diff.document.data())
                         withAnimation {
-                            self.friends.append(self.niceString(map: diff.document.data()))
+                            self.friends.append(self.niceString(map: dat))
+                            self.friendsDict[diff.document.documentID] = dat
                         }
                     }
                     
@@ -197,6 +194,7 @@ class DataHandler: NSObject, ObservableObject {
                         if let index = self.friends.firstIndex(of: self.niceString(map: diff.document.data())) {
                             withAnimation {
                                 self.friends.remove(at: index)
+                                self.friendsDict.removeValue(forKey: diff.document.documentID)
                             }
                         }
                     }
@@ -262,6 +260,38 @@ class DataHandler: NSObject, ObservableObject {
                     }
                     
                     self.callAllUpdates()
+                }
+            }
+            
+        }
+        
+        if (self.postListener == nil) {
+            
+            self.postListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").order(by: "timestamp").addSnapshotListener { querySnapshot, error in
+                guard let snapshot = querySnapshot else {
+                    return
+                }
+                snapshot.documentChanges.forEach { diff in
+                    let dat = diff.document.data()
+                    if (diff.type == .added) {
+                        print("ADDED POST")
+                        print(diff.document.data())
+                        
+                        withAnimation {
+                            self.feed.insert(dat, at:0)
+                        }
+                    }
+                    
+                    if (diff.type == .removed) {
+                        print("REMOVED POST")
+//                        if let index = self.friends.firstIndex(of: diff.document.data()) {
+//                            withAnimation {
+//                                self.feed.remove(at:index)
+//                            }
+//                        }
+                    }
+                    
+                    self.feedUpdate()
                 }
             }
             
@@ -911,6 +941,36 @@ class DataHandler: NSObject, ObservableObject {
                     }
                 }
             }
+        }
+    }
+    
+    func createPost(url: String) {
+        
+        if (url == "") {
+            return
+        }
+        
+        let time = Timestamp()
+        let data = [
+            "img": url,
+            "timestamp": time,
+            "id": self.uid ?? ""
+        ] as [String : Any]
+        
+        let docP = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("posts").document()
+        
+        docP.setData(data)
+        
+        let docID = docP.documentID
+        
+        let docF = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID)
+        
+        docF.setData(data)
+        
+        for friend in friends {
+            guard let id = friend["id"] else { return }
+            let doc = FirebaseManager.shared.db.collection("users").document(id as! String).collection("feed").document(docID)
+            doc.setData(data)
         }
     }
     

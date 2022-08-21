@@ -16,6 +16,11 @@
 		585B59B128AC734300D4AAB5 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 585B59B028AC734300D4AAB5 /* FirebaseMessaging */; };
 		585B59B328AC734300D4AAB5 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 585B59B228AC734300D4AAB5 /* FirebaseStorage */; };
 		58676425288CBE2100667C01 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58676424288CBE2000667C01 /* MapKit.framework */; };
+		586889FA28B186F600D79373 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 586889F928B186F600D79373 /* FeedView.swift */; };
+		586889FC28B18B9E00D79373 /* CustomCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 586889FB28B18B9E00D79373 /* CustomCamera.swift */; };
+		58688A0528B1A29700D79373 /* Zoomable in Frameworks */ = {isa = PBXBuildFile; productRef = 58688A0428B1A29700D79373 /* Zoomable */; };
+		58688A0728B1A33800D79373 /* SDWebImage in Frameworks */ = {isa = PBXBuildFile; productRef = 58688A0628B1A33800D79373 /* SDWebImage */; };
+		58688A0928B1A33800D79373 /* SDWebImageMapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 58688A0828B1A33800D79373 /* SDWebImageMapKit */; };
 		587313DE28A9A17100F945CD /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 587313DD28A9A17100F945CD /* MessageView.swift */; };
 		5876E05028A5770E004E5332 /* FirestoreHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5876E04F28A5770E004E5332 /* FirestoreHandler.swift */; };
 		58BAC31E28B0227600E144E4 /* ChangeProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58BAC31D28B0227600E144E4 /* ChangeProfile.swift */; };
@@ -54,6 +59,8 @@
 /* Begin PBXFileReference section */
 		58557C94288DF724007C70E6 /* BetterMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterMap.swift; sourceTree = "<group>"; };
 		58676424288CBE2000667C01 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		586889F928B186F600D79373 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
+		586889FB28B18B9E00D79373 /* CustomCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomCamera.swift; sourceTree = "<group>"; };
 		587313DD28A9A17100F945CD /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
 		5876E04F28A5770E004E5332 /* FirestoreHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreHandler.swift; sourceTree = "<group>"; };
 		58BAC31D28B0227600E144E4 /* ChangeProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeProfile.swift; sourceTree = "<group>"; };
@@ -85,7 +92,10 @@
 				585B599A28AC71BA00D4AAB5 /* SDWebImageSwiftUI in Frameworks */,
 				585B59B128AC734300D4AAB5 /* FirebaseMessaging in Frameworks */,
 				58676425288CBE2100667C01 /* MapKit.framework in Frameworks */,
+				58688A0728B1A33800D79373 /* SDWebImage in Frameworks */,
 				585B59A928AC734300D4AAB5 /* FirebaseAnalytics in Frameworks */,
+				58688A0528B1A29700D79373 /* Zoomable in Frameworks */,
+				58688A0928B1A33800D79373 /* SDWebImageMapKit in Frameworks */,
 				585B59B328AC734300D4AAB5 /* FirebaseStorage in Frameworks */,
 				585B59AB28AC734300D4AAB5 /* FirebaseAuth in Frameworks */,
 				585B59AF28AC734300D4AAB5 /* FirebaseFirestore in Frameworks */,
@@ -152,6 +162,8 @@
 				58BAC31D28B0227600E144E4 /* ChangeProfile.swift */,
 				5876E04F28A5770E004E5332 /* FirestoreHandler.swift */,
 				648CA82A287A8AC6000D5B3B /* AuthView.swift */,
+				586889F928B186F600D79373 /* FeedView.swift */,
+				586889FB28B18B9E00D79373 /* CustomCamera.swift */,
 				644B7FFF287154E500B8383B /* ContentView.swift */,
 				6487DE15287F46D5007A8637 /* FriendsPage.swift */,
 				644B8001287154E700B8383B /* Assets.xcassets */,
@@ -209,6 +221,9 @@
 				585B59AE28AC734300D4AAB5 /* FirebaseFirestore */,
 				585B59B028AC734300D4AAB5 /* FirebaseMessaging */,
 				585B59B228AC734300D4AAB5 /* FirebaseStorage */,
+				58688A0428B1A29700D79373 /* Zoomable */,
+				58688A0628B1A33800D79373 /* SDWebImage */,
+				58688A0828B1A33800D79373 /* SDWebImageMapKit */,
 			);
 			productName = storyboard;
 			productReference = 644B7FFA287154E500B8383B /* storyboard.app */;
@@ -291,6 +306,9 @@
 				585B598F28AC6D1000D4AAB5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				585B599428AC700D00D4AAB5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				585B59A728AC734300D4AAB5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				586889FD28B1A05300D79373 /* XCRemoteSwiftPackageReference "Zoomable" */,
+				586889FE28B1A19E00D79373 /* XCRemoteSwiftPackageReference "SDWebImage" */,
+				58688A0328B1A29700D79373 /* XCRemoteSwiftPackageReference "Zoomable" */,
 			);
 			productRefGroup = 644B7FFB287154E500B8383B /* Products */;
 			projectDirPath = "";
@@ -339,6 +357,7 @@
 				6495C3012880759A00A2F4B4 /* MapView.swift in Sources */,
 				644B7FFE287154E500B8383B /* storyboardApp.swift in Sources */,
 				58BAC31E28B0227600E144E4 /* ChangeProfile.swift in Sources */,
+				586889FA28B186F600D79373 /* FeedView.swift in Sources */,
 				6495C303288081C200A2F4B4 /* LocationManager.swift in Sources */,
 				587313DE28A9A17100F945CD /* MessageView.swift in Sources */,
 				648CA82B287A8AC6000D5B3B /* AuthView.swift in Sources */,
@@ -346,6 +365,7 @@
 				58557C95288DF724007C70E6 /* BetterMap.swift in Sources */,
 				6487DE16287F46D5007A8637 /* FriendsPage.swift in Sources */,
 				5876E05028A5770E004E5332 /* FirestoreHandler.swift in Sources */,
+				586889FC28B18B9E00D79373 /* CustomCamera.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -511,6 +531,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = storyboard/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "storyboard!";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Please allow us to access your camera";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Please allow us to access your location";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Please allow us to access your location";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Please allow us to access your location";
@@ -550,6 +571,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = storyboard/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "storyboard!";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Please allow us to access your camera";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Please allow us to access your location";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Please allow us to access your location";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Please allow us to access your location";
@@ -712,6 +734,30 @@
 				minimumVersion = 9.0.0;
 			};
 		};
+		586889FD28B1A05300D79373 /* XCRemoteSwiftPackageReference "Zoomable" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jasudev/Zoomable.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.0;
+			};
+		};
+		586889FE28B1A19E00D79373 /* XCRemoteSwiftPackageReference "SDWebImage" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImage.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+		58688A0328B1A29700D79373 /* XCRemoteSwiftPackageReference "Zoomable" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jasudev/Zoomable.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		5876E04C28A557A4004E5332 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
@@ -789,6 +835,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5877B4A628A0684A00149623 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		58688A0428B1A29700D79373 /* Zoomable */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 58688A0328B1A29700D79373 /* XCRemoteSwiftPackageReference "Zoomable" */;
+			productName = Zoomable;
+		};
+		58688A0628B1A33800D79373 /* SDWebImage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 586889FE28B1A19E00D79373 /* XCRemoteSwiftPackageReference "SDWebImage" */;
+			productName = SDWebImage;
+		};
+		58688A0828B1A33800D79373 /* SDWebImageMapKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 586889FE28B1A19E00D79373 /* XCRemoteSwiftPackageReference "SDWebImage" */;
+			productName = SDWebImageMapKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
