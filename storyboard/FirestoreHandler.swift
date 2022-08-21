@@ -267,7 +267,7 @@ class DataHandler: NSObject, ObservableObject {
         
         if (self.postListener == nil) {
             
-            self.postListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").order(by: "timestamp").addSnapshotListener { querySnapshot, error in
+            self.postListener = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").order(by: "timestamp").limit(to: 50).addSnapshotListener { querySnapshot, error in
                 guard let snapshot = querySnapshot else {
                     return
                 }
