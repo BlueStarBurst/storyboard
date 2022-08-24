@@ -189,6 +189,18 @@ class DataHandler: NSObject, ObservableObject {
                         }
                     }
                     
+                    if (diff.type == .modified) {
+                        print("REMOVED FRIEND")
+                        let dat = diff.document.data()
+                        if let index = self.friends.firstIndex(of: self.niceString(map: diff.document.data())) {
+                            withAnimation {
+                                self.friends.remove(at: index)
+                                self.friends.append(self.niceString(map: dat))
+                                self.friendsDict[diff.document.documentID] = dat
+                            }
+                        }
+                    }
+                    
                     if (diff.type == .removed) {
                         print("REMOVED FRIEND")
                         if let index = self.friends.firstIndex(of: self.niceString(map: diff.document.data())) {
@@ -512,6 +524,9 @@ class DataHandler: NSObject, ObservableObject {
                             if let err = err {
                                 print("ERROR WITH FRIEND")
                             } else {
+                                HTTPHandler().POST(url: "/addPostsToFeeds", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
+                                    print("FEED IS BEING ADJUSTED")
+                                })
                                 
                                 self.sendPush(token: (data["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: "New Friend", body: (((data["fullname"] as? String) ?? "") + " has accepted your friend request!"))
                                 completionhandler()
@@ -590,16 +605,20 @@ class DataHandler: NSObject, ObservableObject {
             myFriendRef.getDocument { (document, error) in
                 if let document = document {
                     if document.exists {
+                        HTTPHandler().POST(url: "/removePostsFromFeed", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
+                            print("FEED IS BEING ADJUSTED")
+                        })
                         HTTPHandler().POST(url: "/deleteFriend", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
                             print("SUCCESS REMOVING FRIEND MESSAGES")
-                            fFriendRef.delete()
-                            myFriendRef.delete()
+                            
                         })
                     }
                 }
             }
             
             print("ATTEMPT")
+            fFriendRef.delete()
+            myFriendRef.delete()
             myOutRef.delete()
             myIncRef.delete()
             fOutRef.delete()

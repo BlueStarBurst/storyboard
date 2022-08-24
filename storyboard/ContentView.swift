@@ -27,7 +27,7 @@ struct ContentView: View {
     //.offset(y: mapView ? -100 : 0)
     //.animation(.easeInOut, value: mapView)
     
-    
+    @StateObject var model = FriendsPageViewModel()
     
     var body: some View {
         ZStack {
@@ -81,11 +81,17 @@ struct ContentView: View {
                     }
                 }.tag(1)
                 FriendsPage()
+                    .environmentObject(model)
                     .tag(2)
             }.tabViewStyle(.page(indexDisplayMode: .never))
                 .ignoresSafeArea()
             if isTakingPicture == true {
                 CustomCameraPhotoView(isTakingPicture: $isTakingPicture)
+                    .transition(.move(edge: .bottom))
+            }
+            if model.isEditingProfile == true {
+                ChangeProfile()
+                    .transition(.move(edge: .bottom))
             }
         }
     }

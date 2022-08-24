@@ -35,7 +35,7 @@ class LoginViewModel: ObservableObject {
         withAnimation{isLoading = true}
         
         //undo later
-        Auth.auth().settings?.isAppVerificationDisabledForTesting = true // false
+        Auth.auth().settings?.isAppVerificationDisabledForTesting = false // false
         
         let realC = self.countryCode.filter { $0 != "+" }
         let realP = self.phNumber.filter { $0 != "(" && $0 != "-" && $0 != ")" }
@@ -166,6 +166,7 @@ class LoginViewModel: ObservableObject {
         self.initializing = false
     }
 }
+
 
 
 

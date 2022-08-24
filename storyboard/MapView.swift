@@ -310,6 +310,8 @@ struct EventTab: View {
     @Binding var modelCurrentEventID: String?
     @Binding var annotations: [String:MapPin]
     
+    @Binding var eventScroll: Double
+    
     var index: Int = 0
     
     
@@ -375,6 +377,11 @@ struct EventTab: View {
             
         }
         .onTapGesture {
+            
+            withAnimation {
+                eventScroll = 350.0
+            }
+            
             print("INDEX \(index)")
             
 //            let comp = event["coords"]?.components(separatedBy: " ") ?? ["0.0", "0.0"]
@@ -406,6 +413,13 @@ struct MapView: View {
     enum Field: Hashable {
         case myField
     }
+    
+    @State private var animationAmount: CGFloat = 1
+    @State private var animationAmount2: CGFloat = 1
+    @State private var animationAmount3: CGFloat = 1
+    @State private var animationAmount4: CGFloat = 1
+    
+    @State var tutorial = 0
     
     @FocusState private var focusedField: Field?
     
@@ -530,7 +544,7 @@ struct MapView: View {
                             ScrollViewReader { scrollViewProxy in
                                 VStack {
                                     ForEach (model.eventsString, id: \.self) { event in
-                                        EventTab(event: event, id: event["id"] ?? "", time: event["time"] ?? "", mapView: $model.mapView, modelCurrentEventID: $model.selectedEventID, annotations: $model.pins)
+                                        EventTab(event: event, id: event["id"] ?? "", time: event["time"] ?? "", mapView: $model.mapView, modelCurrentEventID: $model.selectedEventID, annotations: $model.pins, eventScroll: $eventScroll)
                                             .frame(maxWidth: .infinity)
                                             .padding(.bottom, 15)
                                             .id(event["id"] ?? "")
@@ -538,7 +552,7 @@ struct MapView: View {
                                     if (model.incomingEventsString.count > 0) {
                                         Text("Incoming Events").padding(.bottom, 18).foregroundColor(Color.white.opacity(0.8))
                                         ForEach (model.incomingEventsString, id: \.self["id"]) { event in
-                                            EventTab(event: event, id: event["id"] ?? "", time: event["time"] ?? "", mapView: $model.mapView, modelCurrentEventID: $model.selectedEventID, annotations: $model.pins)
+                                            EventTab(event: event, id: event["id"] ?? "", time: event["time"] ?? "", mapView: $model.mapView, modelCurrentEventID: $model.selectedEventID, annotations: $model.pins, eventScroll: $eventScroll)
                                                 .frame(maxWidth: .infinity)
                                                 .padding(.bottom, 18)
                                                 .id(event["id"] ?? "")
@@ -830,6 +844,132 @@ struct MapView: View {
                     
                 }
             }
+            
+            if (model.pins.count == 0 && DataHandler.shared.friends.count == 0 && tutorial < 4) {
+
+                
+                VStack {
+                    Spacer()
+                    if (tutorial == 0) {
+                    Text("Welcome to Storyboard!")
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+//                            .font(.largeTitle)
+                            .font(.system(size: 25))
+                            .transition(.opacity)
+                            
+                    } else if (tutorial == 1) {
+                        ZStack {
+                            Text("Swipe left to see your storyline")
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                                .font(.title)
+                                .transition(.opacity)
+                            
+                            HStack {
+                                Image(systemName: "video").font(.largeTitle)
+                                    .frame(maxWidth: 1, maxHeight: .infinity)
+                                    .background(Color.clear)
+                                    .foregroundColor(.clear)
+                                    .clipShape(Rectangle())
+                                    .offset(x:-30)
+                                    .overlay(
+                                        Rectangle()
+                                            .stroke(Color.white)
+                                            .scaleEffect(animationAmount2)
+                                            .opacity(Double(2 - animationAmount2))
+                                            .offset(x:Double(animationAmount2 * 15.0))
+                                            .animation(Animation.easeOut(duration: 1)
+                                                .repeatForever(autoreverses: false))
+                                    )
+                                    .onAppear
+                                {
+                                    self.animationAmount2 = 2
+                                }
+                                Spacer()
+                            }
+                        }
+                    } else if (tutorial == 2) {
+                        
+                        ZStack {
+                            Text("Swipe right to see your friends list")
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                                .font(.title)
+                                .transition(.opacity)
+                            
+                            HStack {
+                                Spacer()
+                                Image(systemName: "video").font(.largeTitle)
+                                    .frame(maxWidth: 1, maxHeight: .infinity)
+                                    .background(Color.clear)
+                                    .foregroundColor(.clear)
+                                    .clipShape(Rectangle())
+                                    .offset(x:30)
+                                    .overlay(
+                                        Rectangle()
+                                            .stroke(Color.white)
+                                            .scaleEffect(animationAmount3)
+                                            .opacity(Double(2 - animationAmount3))
+                                            .offset(x:-Double(animationAmount3 * 15.0))
+                                            .animation(Animation.easeOut(duration: 1)
+                                                .repeatForever(autoreverses: false))
+                                    )
+                                    .onAppear
+                                {
+                                    self.animationAmount3 = 2
+                                }
+                                
+                            }
+                        }
+                    }
+                    else if (tutorial == 3) {
+                        ZStack {
+                            Text("Tap and hold on the map to make a new event!")
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                                .font(.title)
+                                .transition(.opacity)
+                            Image(systemName: "video").font(.largeTitle)
+                                .padding(30)
+                                .background(Color.clear)
+                                .foregroundColor(.clear)
+                                .clipShape(Circle())
+                                .offset(y: 50)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white)
+                                        .scaleEffect(animationAmount4)
+                                        .opacity(Double(2 - animationAmount4))
+                                        .animation(Animation.easeOut(duration: 1)
+                                            .repeatForever(autoreverses: false))
+                                )
+                                .onAppear
+                            {
+                                self.animationAmount4 = 2
+                            }
+                        }
+                    }
+                    Spacer()
+                    Text("Tap anywhere to continue")
+                        .padding(.bottom, 50)
+                        .opacity((Double(2 - animationAmount)) + 0.5)
+                        .animation(Animation.easeOut(duration: 1)
+                            .repeatForever(autoreverses: true))
+                        .onAppear {
+                            self.animationAmount = 2
+                        }
+                }
+                .padding(.top, 50)
+                .frame(maxWidth: .infinity)
+                .background(Color.black.opacity(0.5))
+                .onTapGesture {
+                    withAnimation {
+                        tutorial += 1
+                    }
+                }
+            }
+            
             
         }
     }

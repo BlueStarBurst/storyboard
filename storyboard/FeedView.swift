@@ -60,27 +60,40 @@ struct FeedView: View {
 //                    .frame(height:1, alignment: .bottom)
 //                    .offset(y: 15)
 //            )
-            
-            List(model.feed, id: \.self) { post in
-                if (post["img"] != "") {
-                    WebImage(url: URL(string: post["img"] ?? ""))
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .cornerRadius(12)
-                        .padding([.top], 5)
-                    let user = model.friendsDict[post["id"] ?? ""] ?? ( (DataHandler.shared.uid == post["id"]) ? DataHandler.shared.currentUser : nil)
-                   
-                    FriendLabel(name: user?["fullname"] as? String ?? "", username: user?["display"] as? String ?? "", id: user?["id"] as? String ?? "", image: user?["pfp"] as? String).onAppear {
-                    }
+            if (model.feed.count > 0) {
+                List(model.feed, id: \.self) { post in
+                    if (post["img"] != "") {
+                        WebImage(url: URL(string: post["img"] ?? ""))
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .cornerRadius(12)
+                            .padding([.top], 5)
+                        let user = model.friendsDict[post["id"] ?? ""] ?? ( (DataHandler.shared.uid == post["id"]) ? DataHandler.shared.currentUser : nil)
                         
+                        FriendLabel(name: user?["fullname"] as? String ?? "", username: user?["display"] as? String ?? "", id: user?["id"] as? String ?? "", image: user?["pfp"] as? String).onAppear {
+                        }
+                        
+                    }
+                }
+                
+                .listStyle(PlainListStyle())
+                
+                .onAppear {
+                    model.update()
+                    DataHandler.shared.feedUpdate = model.update
                 }
             }
-            
-            .listStyle(PlainListStyle())
-            
-            .onAppear {
-                model.update()
-                DataHandler.shared.feedUpdate = model.update
+            else {
+                Text("It's quiet... for now!")
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 25)
+                    .foregroundColor(Color.gray.opacity(0.8))
+                    .padding(.top, 40)
+                Text("Add a friend to recieve their events and stories!")
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 25)
+                    .foregroundColor(Color.gray.opacity(0.8))
+                Spacer()
             }
         }
     }

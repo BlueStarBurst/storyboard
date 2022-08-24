@@ -20,6 +20,7 @@ extension AnyTransition {
 }
 
 class FriendsPageViewModel: ObservableObject {
+    
     @Published var searchUser: String = ""
     @Published var error: Bool = false
     @Published var errorMsg: String = ""
@@ -270,7 +271,7 @@ struct FriendsPage: View {
     
     @FocusState private var focusedField: Field?
     
-    @StateObject var model = FriendsPageViewModel()
+    @EnvironmentObject var model: FriendsPageViewModel
     
     @State var load = false
     
@@ -408,6 +409,16 @@ struct FriendsPage: View {
                             .transition(load == true && change == true ? .inOutLeading : .opacity)
                             //                Spacer()
                         }
+                        else {
+                            Text("There's nothing here for now. Tap the add friend button and type in your friend's unique username!")
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 25)
+                                .foregroundColor(Color.gray.opacity(0.8))
+                                .padding(.top, 20)
+                                .listStyle(PlainListStyle())
+                                .animation(.easeInOut)
+                                .transition(load == true && change == true ? .inOutLeading : .opacity)
+                        }
                     } else {
                         ScrollView {
                             if (model.incomingFriends.count > 0 && model.incomingFriends[0]["username"] != nil) {
@@ -434,6 +445,13 @@ struct FriendsPage: View {
                                         .listRowSeparator(.hidden)
                                 }
                                 .listStyle(PlainListStyle())
+                            }
+                            if (model.outgoingFriends.count == 0 && model.incomingFriends.count == 0) {
+                                Text("You haven't sent or recieed any friend requests yet. Tap the add friend button and type in your friend's unique username!")
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 25)
+                                    .foregroundColor(Color.gray.opacity(0.8))
+                                    .padding(.top, 20)
                             }
                             Spacer()
                         }
@@ -550,13 +568,7 @@ struct FriendsPage: View {
                 
             }
             
-            
-            if model.isEditingProfile {
-               
-                ChangeProfile()
-                    .transition(.move(edge: .bottom))
-                
-            }
+        
             
         }.onTapGesture {
             focusedField = nil

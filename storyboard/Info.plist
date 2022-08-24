@@ -2,21 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	</array>
-	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>MKDirectionsRequest</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.apple.maps.directionsrequest</string>
-			</array>
-		</dict>
-	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -27,22 +12,6 @@
 				<string>com.googleusercontent.apps.944509285235-vnmgd4k3hkj5memhe3bpe6e2mt247s0n</string>
 			</array>
 		</dict>
-		<dict/>
-	</array>
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<true/>
-	<key>MKDirectionsApplicationSupportedModes</key>
-	<array>
-		<string>MKDirectionsModeCar</string>
-		<string>MKDirectionsModePedestrian</string>
-	</array>
-	<key>NSLocationDefaultAccuracyReduced</key>
-	<string>Please allow us to access your location</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>processing</string>
-		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>
