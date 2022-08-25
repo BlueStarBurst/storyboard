@@ -524,7 +524,7 @@
 				CODE_SIGN_ENTITLEMENTS = storyboard/storyboard.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "\"storyboard/Preview Content\"";
 				DEVELOPMENT_TEAM = 6254VA6855;
 				ENABLE_PREVIEWS = YES;
@@ -565,7 +565,7 @@
 				CODE_SIGN_ENTITLEMENTS = storyboard/storyboard.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "\"storyboard/Preview Content\"";
 				DEVELOPMENT_TEAM = 6254VA6855;
 				ENABLE_PREVIEWS = YES;

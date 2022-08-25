@@ -447,7 +447,7 @@ struct FriendsPage: View {
                                 .listStyle(PlainListStyle())
                             }
                             if (model.outgoingFriends.count == 0 && model.incomingFriends.count == 0) {
-                                Text("You haven't sent or recieed any friend requests yet. Tap the add friend button and type in your friend's unique username!")
+                                Text("You don't have any pending friend requests right now. Tap the add friend button and type in your friend's unique username!")
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal, 25)
                                     .foregroundColor(Color.gray.opacity(0.8))

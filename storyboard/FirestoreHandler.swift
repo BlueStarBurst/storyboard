@@ -528,7 +528,7 @@ class DataHandler: NSObject, ObservableObject {
                                     print("FEED IS BEING ADJUSTED")
                                 })
                                 
-                                self.sendPush(token: (data["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: "New Friend", body: (((data["fullname"] as? String) ?? "") + " has accepted your friend request!"))
+                                self.sendPush(token: (data["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: "New Friend", body: (((self.currentUser?["fullname"] as? String) ?? "") + " has accepted your friend request!"))
                                 completionhandler()
                             }
                         }
@@ -560,7 +560,7 @@ class DataHandler: NSObject, ObservableObject {
                             if error != nil {
                                 return
                             }
-                            self.sendPush(token: (data["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: "New Friend Request", body: (((data["fullname"] as? String) ?? "") + " has sent you a friend request!"))
+                            self.sendPush(token: (data["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: "New Friend Request", body: (((self.currentUser?["fullname"] as? String) ?? "") + " has sent you a friend request!"))
                             completionhandler()
                         }
                     }
@@ -760,25 +760,44 @@ class DataHandler: NSObject, ObservableObject {
         }
         
         self.currentEvent = id
-        
-        self.currentChatName = self.events[id!]?["name"] as! String
-        
         self.attendingEvent = []
-        for ids in self.events[id!]?["attending"] as! [String] {
-            getUser(id: ids, completionHandler: { user in
-                self.attendingEvent.append(self.niceString(map: user!))
-                self.messageViewUpdate()
-            })
-        }
-        
         self.invitingEvent = []
-        for ids in self.events[id!]?["invited"] as! [String] {
-            getUser(id: ids, completionHandler: { user in
-                self.invitingEvent.append(self.niceString(map: user!))
-                self.messageViewUpdate()
-            })
-        }
         
+        if (self.events[id!] != nil) {
+            self.currentChatName = self.events[id!]?["name"] as! String
+            for ids in self.events[id!]?["attending"] as! [String] {
+                getUser(id: ids, completionHandler: { user in
+                    self.attendingEvent.append(self.niceString(map: user!))
+                    self.messageViewUpdate()
+                })
+            }
+            for ids in self.events[id!]?["invited"] as! [String] {
+                getUser(id: ids, completionHandler: { user in
+                    self.invitingEvent.append(self.niceString(map: user!))
+                    self.messageViewUpdate()
+                })
+            }
+
+        } else {
+            self.currentChatName = self.incomingEvents[id!]?["name"] as! String
+            for ids in self.incomingEvents[id!]?["attending"] as! [String] {
+                getUser(id: ids, completionHandler: { user in
+                    self.attendingEvent.append(self.niceString(map: user!))
+                    self.messageViewUpdate()
+                })
+            }
+            for ids in self.incomingEvents[id!]?["invited"] as! [String] {
+                getUser(id: ids, completionHandler: { user in
+                    self.invitingEvent.append(self.niceString(map: user!))
+                    self.messageViewUpdate()
+                })
+            }
+
+        }
+
+        
+        
+               
         self.getMessages()
         self.showMessages()
         
