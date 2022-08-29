@@ -291,7 +291,7 @@ struct ChangeProfile: View {
                                             .scaledToFill()
                                             .frame(width: 150, height: 150)
                                             .cornerRadius(75)
-                                    } else if let image = model.imgString {
+                                    } else if model.imgString != "", let image = model.imgString {
                                         WebImage(url:URL(string:image))
                                             .resizable()
                                             .scaledToFill()
@@ -306,7 +306,9 @@ struct ChangeProfile: View {
                                 }
                                 .overlay(RoundedRectangle(cornerRadius: 75)
                                     .stroke(Color.black, lineWidth: 3)
+//                                    .background(Color.pink)
                                 )
+                                
                             }
                             
                         }.padding(.bottom,25)
@@ -379,12 +381,15 @@ struct ChangeProfile: View {
                 .keyboardAdaptive()
                 VStack {
                     HStack {
-                        Image(systemName: "chevron.backward").onTapGesture {
+                        Button(action: {
                             withAnimation {
                                 DataHandler.shared.onFinishEditing()
                             }
-                        }
-                        .imageScale(.large)
+                        },label: {
+                            Image(systemName: "chevron.backward").imageScale(.large).padding(5)
+                        }).padding()
+                        
+                        
                         Spacer()
                     }.padding()
                     Spacer()

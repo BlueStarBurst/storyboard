@@ -322,6 +322,18 @@ struct EventTab: View {
                 .foregroundColor(id == modelCurrentEventID ? Color.red : Color.white)
                 .font(.system(size: 28))
                 .padding(.trailing, 5)
+                .onTapGesture {
+                    
+                    withAnimation {
+                        eventScroll = 350.0
+                    }
+                    
+                    print("INDEX \(index)")
+                    
+        //            let comp = event["coords"]?.components(separatedBy: " ") ?? ["0.0", "0.0"]
+                    mapView.selectAnnotation(annotations[event["id"] ?? ""]!, animated: true)
+        //            mapView.setCenter(CLLocationCoordinate2D(latitude: Double(comp[1]) ?? 0.0, longitude: Double(comp[0]) ?? 0.0), animated: true)
+                }
             VStack {
                 HStack {
                     Text(event["name"] ?? "")
@@ -336,6 +348,12 @@ struct EventTab: View {
                         Spacer()
                     }
                 }
+            }.onTapGesture {
+                if incoming == false {
+                    DataHandler.shared.openEventChat(id: event["id"] ?? "")
+                } else {
+                    DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
+                }
             }
             .padding(.leading, 3)
             Spacer()
@@ -347,7 +365,7 @@ struct EventTab: View {
                         DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
                     }
                 }
-
+            
             Menu {
                 if (incoming == true) {
                     Button(action: {
@@ -376,18 +394,7 @@ struct EventTab: View {
             }
             
         }
-        .onTapGesture {
-            
-            withAnimation {
-                eventScroll = 350.0
-            }
-            
-            print("INDEX \(index)")
-            
-//            let comp = event["coords"]?.components(separatedBy: " ") ?? ["0.0", "0.0"]
-            mapView.selectAnnotation(annotations[event["id"] ?? ""]!, animated: true)
-//            mapView.setCenter(CLLocationCoordinate2D(latitude: Double(comp[1]) ?? 0.0, longitude: Double(comp[0]) ?? 0.0), animated: true)
-        }
+        
         .frame(alignment: .leading)
         .padding(.horizontal, 15)
         .padding(.vertical, 5)
@@ -552,7 +559,7 @@ struct MapView: View {
                                     if (model.incomingEventsString.count > 0) {
                                         Text("Incoming Events").padding(.bottom, 18).foregroundColor(Color.white.opacity(0.8))
                                         ForEach (model.incomingEventsString, id: \.self["id"]) { event in
-                                            EventTab(event: event, id: event["id"] ?? "", time: event["time"] ?? "", mapView: $model.mapView, modelCurrentEventID: $model.selectedEventID, annotations: $model.pins, eventScroll: $eventScroll)
+                                            EventTab(event: event, incoming: true, id: event["id"] ?? "", time: event["time"] ?? "", mapView: $model.mapView, modelCurrentEventID: $model.selectedEventID, annotations: $model.pins, eventScroll: $eventScroll)
                                                 .frame(maxWidth: .infinity)
                                                 .padding(.bottom, 18)
                                                 .id(event["id"] ?? "")

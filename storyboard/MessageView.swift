@@ -73,7 +73,9 @@ struct MessageView: View {
                             Image(systemName: "chevron.backward")
                                 .imageScale(.large)
                                 .onTapGesture {
-                                    DataHandler.shared.hideMessages()
+                                    withAnimation {
+                                        DataHandler.shared.hideMessages()
+                                    }
                                 }
                             Spacer()
                         }

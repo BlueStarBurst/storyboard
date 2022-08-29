@@ -152,11 +152,12 @@ struct CustomCameraView: View {
     @Binding var image: UIImage?
     @State var didTapImg: Bool = false
     @State var didTapCapture: Bool = false
+    @State var flip = false
     var body: some View {
         ZStack(alignment: .bottom) {
             
-            CustomCameraRepresentable(image: self.$image, didTapCapture: $didTapCapture, didTapImg: $didTapImg)
-            CaptureButtonView(image: $image, didTapCapture: $didTapCapture, didTapImg: $didTapImg)
+            CustomCameraRepresentable(image: self.$image, didTapCapture: $didTapCapture, didTapImg: $didTapImg, flip: $flip)
+            CaptureButtonView(image: $image, didTapCapture: $didTapCapture, didTapImg: $didTapImg, flip: $flip)
         }
     }
     
@@ -169,6 +170,7 @@ struct CustomCameraRepresentable: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     @Binding var didTapCapture: Bool
     @Binding var didTapImg: Bool
+    @Binding var flip: Bool
     
     func makeUIViewController(context: Context) -> CustomCameraController {
         let controller = CustomCameraController()
@@ -177,6 +179,9 @@ struct CustomCameraRepresentable: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ cameraViewController: CustomCameraController, context: Context) {
+
+        cameraViewController.setCurrentCamera(flip: self.flip)
+        
         if(self.didTapImg) {
             presentationMode.wrappedValue.dismiss()
         }
@@ -260,9 +265,24 @@ class CustomCameraController: UIViewController {
             }
         }
         
-        self.currentCamera = self.backCamera
+        self.currentCamera = self.frontCamera
     }
     
+    func setCurrentCamera(flip: Bool) {
+        
+        
+        if (flip == true) {
+//            if (self.currentCamera == self.backCamera) {
+//                return
+//            }
+            self.currentCamera = self.backCamera
+        } else {
+//            if (self.currentCamera == self.frontCamera) {
+//                return
+//            }
+            self.currentCamera = self.frontCamera
+        }
+    }
     
     func setupInputOutput() {
         do {
@@ -298,6 +318,7 @@ struct CaptureButtonView: View {
     @Binding var image: UIImage?
     @Binding var didTapCapture: Bool
     @Binding var didTapImg: Bool
+    @Binding var flip: Bool
     
     @State private var animationAmount: CGFloat = 1
     @State private var shouldShowImagePicker = false
@@ -311,7 +332,7 @@ struct CaptureButtonView: View {
                         didTapImg = false
                     }
             }
-            Image(systemName: "video").font(.largeTitle)
+            Image(systemName: "camera").font(.largeTitle)
                 .padding(30)
                 .background(Color.pink)
                 .foregroundColor(.white)
@@ -330,11 +351,13 @@ struct CaptureButtonView: View {
             }.onTapGesture {
                 self.didTapCapture = true
             }
-            Button(action: {}) {
-                Label("", systemImage: "photo.fill.on.rectangle.fill")
+            Button(action: {withAnimation {
+                flip.toggle()
+            }}) {
+                Label("", systemImage: "arrow.triangle.2.circlepath.camera.fill")
                     .foregroundColor(Color.white)
                     .font(.largeTitle)
-            }.opacity(0)
+            }
         }.fullScreenCover(isPresented: $shouldShowImagePicker, onDismiss: nil) {
             ImagePicker(image: $image)
                 .ignoresSafeArea()

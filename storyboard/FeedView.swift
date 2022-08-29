@@ -27,6 +27,7 @@ class FeedViewModel: ObservableObject {
             ])
         }
         self.friendsDict = DataHandler.shared.friendsDict
+//        self.friendsDict[DataHandler.shared.uid ?? ""] = DataHandler.shared.currentUser
         print("FRIENDSDICT")
         print(friendsDict)
     }
@@ -54,6 +55,10 @@ struct FeedView: View {
             }
             .padding([.trailing , .leading ], 15)
             .background(Color.black)
+            .onAppear {
+                model.update()
+                DataHandler.shared.feedUpdate = model.update
+            }
 //            .overlay(
 //                Rectangle()
 //                    .fill(Color.white.opacity(0.9))
@@ -78,10 +83,7 @@ struct FeedView: View {
                 
                 .listStyle(PlainListStyle())
                 
-                .onAppear {
-                    model.update()
-                    DataHandler.shared.feedUpdate = model.update
-                }
+                
             }
             else {
                 Text("It's quiet... for now!")

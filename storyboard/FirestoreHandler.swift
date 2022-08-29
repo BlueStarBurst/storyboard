@@ -229,8 +229,21 @@ class DataHandler: NSObject, ObservableObject {
                         print("ADDED EVENT")
                         print(diff.document.data())
                         
-                        withAnimation {
+                        var time = Int(((dat["date"] as? Timestamp)?.dateValue()) as! Date - Date())
+                        var timeString = ""
+                        
+                        var sec = abs(time % 60)
+                        var minutes = abs((time / 60) % 60)
+                        var hours = abs((time / 60 / 60) % 60)
+                        var days = abs((time / 60 / 60 / 24) % 24)
+                        
+                        if (time < 0 && days >= 1) {
                             self.events[diff.document.documentID] = dat
+                            self.leaveEvent(id: diff.document.documentID)
+                        } else {
+                            withAnimation {
+                                self.events[diff.document.documentID] = dat
+                            }
                         }
                     }
                     
@@ -683,7 +696,7 @@ class DataHandler: NSObject, ObservableObject {
     }
     
     func joinEvent(id: String) {
-        var event = events[id]
+        var event = events[id] ?? incomingEvents[id]
         var att = event?["attending"] as! [String]
         var inv = event?["invited"] as! [String]
         
@@ -693,12 +706,14 @@ class DataHandler: NSObject, ObservableObject {
         event?["attending"] = att
         event?["invited"] = inv
         
+        FirebaseManager.shared.db.collection("users").document(self.uid!).collection("incomingEvents").document(id).delete()
+        
         updateEvent(data: event!, id: id, completionHandler: {})
     
     }
     
     func leaveEvent(id: String) {
-        var event = events[id]
+        var event = events[id] ?? incomingEvents[id]
         var att = event?["attending"] as! [String]
         var inv = event?["invited"] as! [String]
         
