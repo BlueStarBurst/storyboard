@@ -48,6 +48,7 @@ class DataHandler: NSObject, ObservableObject {
     @Published var outFriendRequests: [[String:String]] = []
     
     var feed: [[String:Any]] = []
+    var posts: [[String:Any]] = []
     
     var events: [String:[String:Any]] = [:]
     var incomingEvents: [String:[String:Any]] = [:]
@@ -62,8 +63,11 @@ class DataHandler: NSObject, ObservableObject {
     var incEventsListener: ListenerRegistration?
     var chatListener: ListenerRegistration?
     var postListener: ListenerRegistration?
+    var userPageListener: ListenerRegistration?
     
     var uid: String?
+    
+    var currentUserPage: String?
     
     var eventPageUpdate : () -> Void = {}
     var friendPageUpdate : () -> Void = {}
@@ -71,6 +75,10 @@ class DataHandler: NSObject, ObservableObject {
     var messageViewUpdate: () -> Void = {}
     var onFinishEditing: () -> Void = {}
     var feedUpdate: () -> Void = {}
+    var userPageUpdate: () -> Void = {}
+    var pageUpdate: (Int) -> Void = {_ in }
+    
+    var userPageDat: [String: Any] = [:]
     
     func callAllUpdates() {
         self.eventPageUpdate()
@@ -88,12 +96,14 @@ class DataHandler: NSObject, ObservableObject {
     func load(onComplete: @escaping () -> Void = {}) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         self.uid = uid
+        self.currentUserPage = uid
+        
         
         print(self.uid)
         
         self.getSelf(onComplete: {
             onComplete()
-
+            self.updateCurrentUserPage(id: uid, currentUser: true, prev: true)
             self.updateToken()
             self.setupListeners()
         })
@@ -323,6 +333,64 @@ class DataHandler: NSObject, ObservableObject {
         }
     }
     
+    
+    
+    func updateCurrentUserPage(id: String, currentUser: Bool = false, prev: Bool = false) {
+        
+        var currentId = id
+        
+        if (currentUser == true) {
+            currentId = uid ?? ""
+            self.userPageDat = self.currentUser ?? [:]
+        } else {
+            if (friendsDict[id] != nil) {
+                self.userPageDat = friendsDict[id] ?? [:]
+            } else {
+                return
+            }
+        }
+        
+        self.currentUserPage = currentId
+        
+        if (self.postListener != nil) {
+            self.postListener?.remove()
+        }
+        self.posts = []
+            self.postListener = FirebaseManager.shared.db.collection("users").document(currentId ?? "").collection("posts").order(by: "timestamp").limit(to: 50).addSnapshotListener { querySnapshot, error in
+                guard let snapshot = querySnapshot else {
+                    return
+                }
+                snapshot.documentChanges.forEach { diff in
+                    let dat = diff.document.data()
+                    if (diff.type == .added) {
+                        print("ADDED POST")
+                        print(diff.document.data())
+                        
+                        withAnimation {
+                            self.posts.insert(dat, at:0)
+                        }
+                    }
+                    
+                    if (diff.type == .removed) {
+                        print("REMOVED POST")
+//                        if let index = self.friends.firstIndex(of: diff.document.data()) {
+//                            withAnimation {
+//                                self.feed.remove(at:index)
+//                            }
+//                        }
+                    }
+                    
+                    self.userPageUpdate()
+                    
+                }
+            
+            
+        }
+        if (!prev) {
+            self.pageUpdate(3)
+        }
+    }
+    
     func getUser(username: String, completionHandler: @escaping ([String:Any]) -> Void) {
         
         FirebaseManager.shared.db.collection("users").whereField("username", isEqualTo: username.lowercased()).getDocuments() { (querySnapshot, err) in
@@ -540,6 +608,8 @@ class DataHandler: NSObject, ObservableObject {
                                 HTTPHandler().POST(url: "/addPostsToFeeds", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
                                     print("FEED IS BEING ADJUSTED")
                                 })
+                                
+                    
                                 
                                 self.sendPush(token: (data["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: "New Friend", body: (((self.currentUser?["fullname"] as? String) ?? "") + " has accepted your friend request!"))
                                 completionhandler()
@@ -997,34 +1067,59 @@ class DataHandler: NSObject, ObservableObject {
         }
     }
     
-    func createPost(url: String) {
+    func createPost(img: Data) {
         
-        if (url == "") {
+        if (img == nil) {
             return
         }
         
-        let time = Timestamp()
-        let data = [
-            "img": url,
-            "timestamp": time,
-            "id": self.uid ?? ""
-        ] as [String : Any]
-        
         let docP = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("posts").document()
-        
-        docP.setData(data)
-        
         let docID = docP.documentID
         
-        let docF = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID)
-        
-        docF.setData(data)
-        
-        for friend in friends {
-            guard let id = friend["id"] else { return }
-            let doc = FirebaseManager.shared.db.collection("users").document(id as! String).collection("feed").document(docID)
-            doc.setData(data)
+        let ref = Storage.storage().reference().child(uid! + "/" + docID + ".jpg")
+       
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpg"
+        ref.putData(img, metadata: metadata) { metadata, err in
+            if let err = err {
+                print("Failed to push image to Storage: \(err)")
+                return
+            }
+            
+            ref.downloadURL { url, err in
+                if let err = err {
+                    print("Failed to retrieve downloadURL: \(err)")
+                    return
+                }
+                
+                let time = Timestamp()
+                let data = [
+                    "img": url?.absoluteString ?? "",
+                    "timestamp": time,
+                    "id": self.uid ?? ""
+                ] as [String : Any]
+                
+                docP.setData(data)
+                
+                let docID = docP.documentID
+                
+                let docF = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID)
+                
+                docF.setData(data)
+                
+                for friend in self.friends {
+                    guard let id = friend["id"] else { return }
+                    let doc = FirebaseManager.shared.db.collection("users").document(id as! String).collection("feed").document(docID)
+                    doc.setData(data)
+                }
+               
+                
+                print(url?.absoluteString)
+            }
         }
+        
+        
+        
     }
     
 }

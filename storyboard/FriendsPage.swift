@@ -144,6 +144,11 @@ struct FriendLabel: View {
                 .background(Color.pink)
                 .clipShape(Circle())
                 .padding(.trailing, 5)
+                .onTapGesture {
+                    withAnimation {
+                        DataHandler.shared.updateCurrentUserPage(id: id)
+                    }
+                }
             VStack {
                 HStack {
                     Text(name)
@@ -300,6 +305,9 @@ struct FriendsPage: View {
                             .background(Color.pink)
                             .clipShape(Circle())
                             .padding(.trailing, 5)
+                            .onTapGesture {
+                                DataHandler.shared.updateCurrentUserPage(id: "", currentUser: true)
+                            }
                         VStack {
                             HStack {
                                 Text(DataHandler.shared.currentUser!["fullname"] as! String)

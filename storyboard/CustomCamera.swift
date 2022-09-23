@@ -4,6 +4,19 @@ import Zoomable
 import Firebase
 import FirebaseStorage
 
+extension UIImage {
+    func aspectFittedToHeight(_ newHeight: CGFloat) -> UIImage {
+        let scale = newHeight / self.size.height
+        let newWidth = self.size.width * scale
+        let newSize = CGSize(width: newWidth, height: newHeight)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+
+        return renderer.image { _ in
+            self.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+}
+
 struct CustomCameraPhotoView: View {
     @State private var image: Image?
     @State private var showingCustomCamera = true
@@ -14,28 +27,8 @@ struct CustomCameraPhotoView: View {
     @Binding var isTakingPicture: Bool
     
     private func persistImageToStorage() {
-        print("PERSIST")
-        guard let uid = Auth.auth().currentUser?.uid else { return }
-        let ref = Storage.storage().reference(withPath: uid)
-        guard let imageData = self.inputImage?.jpegData(compressionQuality: 0.5) else { return }
-        ref.putData(imageData, metadata: nil) { metadata, err in
-            if let err = err {
-                print("Failed to push image to Storage: \(err)")
-                return
-            }
-            
-            ref.downloadURL { url, err in
-                if let err = err {
-                    print("Failed to retrieve downloadURL: \(err)")
-                    return
-                }
-                
-                DataHandler.shared.createPost(url: url?.absoluteString ?? "")
-               
-                
-                print(url?.absoluteString)
-            }
-        }
+        guard let imageData = self.inputImage?.aspectFittedToHeight(200).jpegData(compressionQuality: 0.5) else { return }
+        DataHandler.shared.createPost(img: imageData)
     }
     
     var body: some View {
@@ -53,13 +46,16 @@ struct CustomCameraPhotoView: View {
                                 .aspectRatio(contentMode: .fill)
                                 .blur(radius: 15)
                                 .frame(width: geometry.size.width, height: geometry.size.height)
+//                                .onAppear {
+//                                    image.
+//                                }
                         }
                         ZoomableScrollView {
                             image?
                                 .resizable()
-                                .aspectRatio(contentMode: .fit)
+                                .aspectRatio(contentMode: .fill)
                             //                                    .blur(radius: 15)
-                        }
+                        }.ignoresSafeArea()
                         
                         VStack {
                             HStack {
@@ -238,9 +234,9 @@ class CustomCameraController: UIViewController {
         super.viewDidLoad()
         setup()
     }
-    func setup() {
+    func setup(flip: Bool = false) {
         setupCaptureSession()
-        setupDevice()
+        setupDevice(flip: flip)
         setupInputOutput()
         setupPreviewLayer()
         startRunningCaptureSession()
@@ -249,7 +245,7 @@ class CustomCameraController: UIViewController {
         captureSession.sessionPreset = AVCaptureSession.Preset.photo
     }
     
-    func setupDevice() {
+    func setupDevice(flip: Bool = false) {
         let deviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [AVCaptureDevice.DeviceType.builtInWideAngleCamera],
                                                                       mediaType: AVMediaType.video,
                                                                       position: AVCaptureDevice.Position.unspecified)
@@ -265,22 +261,63 @@ class CustomCameraController: UIViewController {
             }
         }
         
-        self.currentCamera = self.frontCamera
+        if (flip == false) {
+            self.currentCamera = self.frontCamera
+        } else {
+            self.currentCamera = self.frontCamera
+        }
     }
     
     func setCurrentCamera(flip: Bool) {
-        
+        print("FLIPPING CAMERA")
+//        captureSession = nil
         
         if (flip == true) {
-//            if (self.currentCamera == self.backCamera) {
-//                return
-//            }
-            self.currentCamera = self.backCamera
+            if (self.currentCamera == self.backCamera) {
+                return
+            }
+            do {
+                self.currentCamera = self.backCamera
+                //            setupInputOutput()
+                for inp in captureSession.inputs {
+                    captureSession.removeInput(inp)
+                }
+                let captureDeviceInput = try AVCaptureDeviceInput(device: currentCamera!)
+                captureSession.addInput(captureDeviceInput)
+            } catch {
+                print("ERROR")
+            }
+            
+            if (self.cameraPreviewLayer?.connection?.isVideoMirroringSupported == true) {
+                self.cameraPreviewLayer?.connection?.automaticallyAdjustsVideoMirroring = false
+                self.cameraPreviewLayer?.connection?.isVideoMirrored = false
+            }
+//            setupPreviewLayer()
+//            startRunningCaptureSession()
         } else {
-//            if (self.currentCamera == self.frontCamera) {
-//                return
-//            }
-            self.currentCamera = self.frontCamera
+            if (self.currentCamera == self.frontCamera) {
+                return
+            }
+            
+            do {
+                self.currentCamera = self.frontCamera
+                //            setupInputOutput()
+                for inp in captureSession.inputs {
+                    captureSession.removeInput(inp)
+                }
+                let captureDeviceInput = try AVCaptureDeviceInput(device: currentCamera!)
+                captureSession.addInput(captureDeviceInput)
+                
+                if (self.cameraPreviewLayer?.connection?.isVideoMirroringSupported == true) {
+                    self.cameraPreviewLayer?.connection?.automaticallyAdjustsVideoMirroring = false
+                    self.cameraPreviewLayer?.connection?.isVideoMirrored = true
+                }
+            } catch {
+                print("ERROR")
+            }
+            
+//            setupPreviewLayer()
+//            startRunningCaptureSession()
         }
     }
     
@@ -288,6 +325,11 @@ class CustomCameraController: UIViewController {
         do {
             
             let captureDeviceInput = try AVCaptureDeviceInput(device: currentCamera!)
+            
+//            for ou in captureSession.outputs {
+//                captureSession.removeOutput(ou)
+//            }
+            
             captureSession.addInput(captureDeviceInput)
             photoOutput = AVCapturePhotoOutput()
             photoOutput?.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])], completionHandler: nil)
@@ -306,9 +348,18 @@ class CustomCameraController: UIViewController {
         self.cameraPreviewLayer?.frame = self.view.frame
         self.view.layer.insertSublayer(cameraPreviewLayer!, at: 0)
         
+        if (self.cameraPreviewLayer?.connection?.isVideoMirroringSupported == true) {
+            self.cameraPreviewLayer?.connection?.automaticallyAdjustsVideoMirroring = false
+            self.cameraPreviewLayer?.connection?.isVideoMirrored = true
+        }
+        
     }
     func startRunningCaptureSession(){
         captureSession.startRunning()
+    }
+    
+    func stopRunningCaptureSession() {
+        captureSession.stopRunning()
     }
 }
 

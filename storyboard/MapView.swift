@@ -379,7 +379,7 @@ struct EventTab: View {
                     mapView.removeAnnotationAndOverlay(annotation: annotations[event["id"] ?? ""]!)
                     annotations.removeValue(forKey: event["id"] ?? "")
                 }) {
-                    Label("Remove Event", systemImage: "trash.fill")
+                    Label("Leave Event", systemImage: "trash.fill")
                 }
             } label: {
                 VStack {

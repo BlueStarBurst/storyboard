@@ -21,6 +21,7 @@
 		58688A0528B1A29700D79373 /* Zoomable in Frameworks */ = {isa = PBXBuildFile; productRef = 58688A0428B1A29700D79373 /* Zoomable */; };
 		58688A0728B1A33800D79373 /* SDWebImage in Frameworks */ = {isa = PBXBuildFile; productRef = 58688A0628B1A33800D79373 /* SDWebImage */; };
 		58688A0928B1A33800D79373 /* SDWebImageMapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 58688A0828B1A33800D79373 /* SDWebImageMapKit */; };
+		586DB1A628DD7F2F00D8A5D8 /* UserPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 586DB1A528DD7F2F00D8A5D8 /* UserPage.swift */; };
 		587313DE28A9A17100F945CD /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 587313DD28A9A17100F945CD /* MessageView.swift */; };
 		5876E05028A5770E004E5332 /* FirestoreHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5876E04F28A5770E004E5332 /* FirestoreHandler.swift */; };
 		58BAC31E28B0227600E144E4 /* ChangeProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58BAC31D28B0227600E144E4 /* ChangeProfile.swift */; };
@@ -61,6 +62,7 @@
 		58676424288CBE2000667C01 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		586889F928B186F600D79373 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		586889FB28B18B9E00D79373 /* CustomCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomCamera.swift; sourceTree = "<group>"; };
+		586DB1A528DD7F2F00D8A5D8 /* UserPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPage.swift; sourceTree = "<group>"; };
 		587313DD28A9A17100F945CD /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
 		5876E04F28A5770E004E5332 /* FirestoreHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreHandler.swift; sourceTree = "<group>"; };
 		58BAC31D28B0227600E144E4 /* ChangeProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeProfile.swift; sourceTree = "<group>"; };
@@ -165,6 +167,7 @@
 				586889F928B186F600D79373 /* FeedView.swift */,
 				586889FB28B18B9E00D79373 /* CustomCamera.swift */,
 				644B7FFF287154E500B8383B /* ContentView.swift */,
+				586DB1A528DD7F2F00D8A5D8 /* UserPage.swift */,
 				6487DE15287F46D5007A8637 /* FriendsPage.swift */,
 				644B8001287154E700B8383B /* Assets.xcassets */,
 				644B8003287154E700B8383B /* Preview Content */,
@@ -356,6 +359,7 @@
 				644B8000287154E500B8383B /* ContentView.swift in Sources */,
 				6495C3012880759A00A2F4B4 /* MapView.swift in Sources */,
 				644B7FFE287154E500B8383B /* storyboardApp.swift in Sources */,
+				586DB1A628DD7F2F00D8A5D8 /* UserPage.swift in Sources */,
 				58BAC31E28B0227600E144E4 /* ChangeProfile.swift in Sources */,
 				586889FA28B186F600D79373 /* FeedView.swift in Sources */,
 				6495C303288081C200A2F4B4 /* LocationManager.swift in Sources */,

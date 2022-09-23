@@ -219,8 +219,8 @@ class ChangeProfileViewModel: ObservableObject {
         print("PERSIST")
         guard let uid = Auth.auth().currentUser?.uid else { self.isUserCreated(success: true)
             return }
-        let ref = Storage.storage().reference(withPath: uid)
-        guard let imageData = self.image?.jpegData(compressionQuality: 0.5) else { self.isUserCreated(success: true)
+        let ref = Storage.storage().reference().child(uid + "/pfp.jpg")
+        guard let imageData = self.image?.aspectFittedToHeight(200).jpegData(compressionQuality: 0.5) else { self.isUserCreated(success: true)
             return }
         ref.putData(imageData, metadata: nil) { metadata, err in
             if let err = err {
@@ -305,8 +305,10 @@ struct ChangeProfile: View {
                                     }
                                 }
                                 .overlay(RoundedRectangle(cornerRadius: 75)
-                                    .stroke(Color.black, lineWidth: 3)
-//                                    .background(Color.pink)
+//                                    .stroke(Color.black, lineWidth: 3)
+                                    .fill((model.image != nil && model.imgString != "") ? Color.clear : Color.pink)
+                                    
+                                    
                                 )
                                 
                             }

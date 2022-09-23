@@ -15,10 +15,24 @@ extension String: Identifiable {
     }
 }
 
+class PageModel : ObservableObject {
+    @Published var page = 1
+    @Published var showUser = false
+    
+    func update(num: Int) {
+        withAnimation {
+            if (num == 3) {
+                self.showUser = true
+            }
+            self.page = num
+        }
+    }
+}
+
 struct ContentView: View {
     
     
-    @State private var page = 1
+//    @State private var page = 1
     @State private var mapView = false
     @State private var headerSize = CGSize()
     
@@ -28,10 +42,12 @@ struct ContentView: View {
     //.animation(.easeInOut, value: mapView)
     
     @StateObject var model = FriendsPageViewModel()
+    @StateObject var pageModel = PageModel()
+    
     
     var body: some View {
         ZStack {
-            TabView(selection:$page) {
+            TabView(selection:$pageModel.page) {
                 ZStack{
                     FeedView(isTakingPicture: $isTakingPicture)
                 }.tag(0)
@@ -67,24 +83,37 @@ struct ContentView: View {
                         
                         
                     }
-                    VStack{
-                        HStack {
-                            Spacer()
-                            Text("live")
-                            Spacer()
-                        }
-                        
-                        .padding([.bottom , .trailing , .leading ], 15)
-                        .background(Color.black)
-                        
-                        Spacer()
-                    }
+//                    VStack{
+//                        
+//                        HStack {
+//                            Spacer()
+//                            Image("1024")
+//                                .resizable()
+//                                .scaledToFit()
+//                                .frame(height:35)
+//                            Spacer()
+//                        }
+//                        .frame(maxWidth: .infinity)
+//                        
+//                        .padding([.bottom , .trailing , .leading ], 5)
+//                        .background(Color.black)
+//                        
+//                        Spacer()
+//                    }
                 }.tag(1)
                 FriendsPage()
                     .environmentObject(model)
                     .tag(2)
+                UserPage()
+                    .tag(3)
+                
             }.tabViewStyle(.page(indexDisplayMode: .never))
                 .ignoresSafeArea()
+//                .onChange(of: model.page, perform: { index in
+//                    if (index != 3) {
+//                        DataHandler.shared.hideUserPage = true
+//                    }
+//                })
             if isTakingPicture == true {
                 CustomCameraPhotoView(isTakingPicture: $isTakingPicture)
                     .transition(.move(edge: .bottom))
@@ -93,6 +122,9 @@ struct ContentView: View {
                 ChangeProfile()
                     .transition(.move(edge: .bottom))
             }
+        }
+        .onAppear {
+            DataHandler.shared.pageUpdate = pageModel.update
         }
     }
 }
