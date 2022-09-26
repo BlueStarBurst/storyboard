@@ -31,6 +31,8 @@ struct CustomCameraPhotoView: View {
         DataHandler.shared.createPost(img: imageData)
     }
     
+//    "cRizrR3WFEP7vxdIrwaZ4K:APA91bEk_-C9Wv8GBG5SVWuYfoc13SlDObqIHprJtUMXjSH5i0jD2eb8QIsSZqjWmLU-r9VL1OvjWU0ABZs5NzNY5yhCplsTJEWGptTrLloK3PsIPJhEzv1UOc9yx2ww3fJFBFbtBBcZ"
+    
     var body: some View {
         
         VStack {
