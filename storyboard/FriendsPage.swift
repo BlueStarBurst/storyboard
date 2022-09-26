@@ -146,7 +146,7 @@ struct FriendLabel: View {
                 .padding(.trailing, 5)
                 .onTapGesture {
                     withAnimation {
-                        DataHandler.shared.updateCurrentUserPage(id: id)
+                        DataHandler.shared.updateCurrentUserPage(id: id, currentUser: ((DataHandler.shared.uid ?? "") == id) ? true : false)
                     }
                 }
             VStack {
@@ -528,6 +528,11 @@ struct FriendsPage: View {
                                 Color(red: 46.0/255, green: 46.0/255, blue: 46.0/255)
                             )
                             .cornerRadius(16)
+                            .onAppear {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.51) {
+                                    self.focusedField = .myField
+                                }
+                            }
                         
                     }
                     .padding()

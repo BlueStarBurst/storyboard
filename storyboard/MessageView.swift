@@ -85,9 +85,9 @@ struct MessageView: View {
                         HStack {
                             Spacer()
                             if model.isFriend {
-                            Image(systemName: "person.2.fill")
-                                .imageScale(.large)
-                                .opacity(0)
+                                Image(systemName: "person.2.fill")
+                                    .imageScale(.large)
+                                    .opacity(0)
                             } else {
                                 Image(systemName: "person.2.fill")
                                     .imageScale(.large)
@@ -236,26 +236,30 @@ struct MessageView: View {
                     if (isBack) {
                         VStack {
                             ScrollView {
-                                Text("Attending")
-                                ForEach(model.attendingEvent, id: \.self) { friend in
-                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", update: model.update, image: friend["pfp"])
-                                        .padding(.horizontal, 5)
-                                        .padding(.vertical, 5)
-                                        .listRowBackground(Color.black)
-                                        .listRowSeparator(.hidden)
+                                if (model.attendingEvent.count > 0) {
+                                    Text("Attending")
+                                    ForEach(model.attendingEvent, id: \.self) { friend in
+                                        FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", update: model.update, image: friend["pfp"])
+                                            .padding(.horizontal, 5)
+                                            .padding(.vertical, 5)
+                                            .listRowBackground(Color.black)
+                                            .listRowSeparator(.hidden)
+                                    }
+                                    .listStyle(PlainListStyle())
+                                    .frame(maxWidth: .infinity)
                                 }
-                                .listStyle(PlainListStyle())
-                                .frame(maxWidth: .infinity)
-                                Text("Invited")
-                                ForEach(model.invitingEvent, id: \.self) { friend in
-                                    FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", update: model.update, image: friend["pfp"])
-                                        .padding(.horizontal, 5)
-                                        .padding(.vertical, 5)
-                                        .listRowBackground(Color.black)
-                                        .listRowSeparator(.hidden)
+                                if (model.invitingEvent.count > 0) {
+                                    Text("Invited")
+                                    ForEach(model.invitingEvent, id: \.self) { friend in
+                                        FriendLabel(name:friend["fullname"] ?? "",username:friend["display"] ?? "", id:friend["id"] ?? "", update: model.update, image: friend["pfp"])
+                                            .padding(.horizontal, 5)
+                                            .padding(.vertical, 5)
+                                            .listRowBackground(Color.black)
+                                            .listRowSeparator(.hidden)
+                                    }
+                                    .listStyle(PlainListStyle())
+                                    .frame(maxWidth: .infinity)
                                 }
-                                .listStyle(PlainListStyle())
-                                .frame(maxWidth: .infinity)
                                 Spacer()
                             }
                         }

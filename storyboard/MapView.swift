@@ -349,21 +349,23 @@ struct EventTab: View {
                     }
                 }
             }.onTapGesture {
-                if incoming == false {
-                    DataHandler.shared.openEventChat(id: event["id"] ?? "")
-                } else {
-                    DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
-                }
+                DataHandler.shared.openEventChat(id: event["id"] ?? "")
+//                if incoming == false {
+//                    DataHandler.shared.openEventChat(id: event["id"] ?? "")
+//                } else {
+//                    DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
+//                }
             }
             .padding(.leading, 3)
             Spacer()
             Image(systemName: "bubble.left")
                 .onTapGesture {
-                    if incoming == false {
-                        DataHandler.shared.openEventChat(id: event["id"] ?? "")
-                    } else {
-                        DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
-                    }
+                    DataHandler.shared.openEventChat(id: event["id"] ?? "")
+//                    if incoming == false {
+//                        DataHandler.shared.openEventChat(id: event["id"] ?? "")
+//                    } else {
+//                        DataHandler.shared.openIncomingEventChat(id: event["id"] ?? "")
+//                    }
                 }
             
             Menu {

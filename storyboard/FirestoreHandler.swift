@@ -36,6 +36,8 @@ class DataHandler: NSObject, ObservableObject {
     
     var chatMessages = [ChatMessage]()
     
+    var comments: [[String:String]] = []
+    
     var currentChatName: String = ""
     
     var isMessageView = false
@@ -64,6 +66,7 @@ class DataHandler: NSObject, ObservableObject {
     var chatListener: ListenerRegistration?
     var postListener: ListenerRegistration?
     var userPageListener: ListenerRegistration?
+    var commentsListener: ListenerRegistration?
     
     var uid: String?
     
@@ -77,6 +80,7 @@ class DataHandler: NSObject, ObservableObject {
     var feedUpdate: () -> Void = {}
     var userPageUpdate: () -> Void = {}
     var pageUpdate: (Int) -> Void = {_ in }
+    var commentsUpdate: () -> Void = {}
     
     var userPageDat: [String: Any] = [:]
     
@@ -317,6 +321,20 @@ class DataHandler: NSObject, ObservableObject {
                         }
                     }
                     
+                    if (diff.type == .modified) {
+                        withAnimation {
+                            var ind = 0
+                            for post in self.feed {
+                                if (post["docID"] as? String ?? "1" == dat["docID"] as? String ?? "2") {
+                                    self.feed[ind] = dat
+                                    break;
+                                }
+                                ind += 1
+                            }
+                            
+                        }
+                    }
+                    
                     if (diff.type == .removed) {
                         print("REMOVED POST")
 //                        if let index = self.friends.firstIndex(of: diff.document.data()) {
@@ -332,6 +350,7 @@ class DataHandler: NSObject, ObservableObject {
             
         }
     }
+    
     
     
     
@@ -352,11 +371,11 @@ class DataHandler: NSObject, ObservableObject {
         
         self.currentUserPage = currentId
         
-        if (self.postListener != nil) {
-            self.postListener?.remove()
+        if (self.userPageListener != nil) {
+            self.userPageListener?.remove()
         }
         self.posts = []
-            self.postListener = FirebaseManager.shared.db.collection("users").document(currentId ?? "").collection("posts").order(by: "timestamp").limit(to: 50).addSnapshotListener { querySnapshot, error in
+            self.userPageListener = FirebaseManager.shared.db.collection("users").document(currentId ?? "").collection("posts").order(by: "timestamp").limit(to: 50).addSnapshotListener { querySnapshot, error in
                 guard let snapshot = querySnapshot else {
                     return
                 }
@@ -391,6 +410,66 @@ class DataHandler: NSObject, ObservableObject {
         }
     }
     
+    func sendComment(message: String, user: String, docID: String) {
+        let messageData = [
+            "message": message,
+            "id": uid ?? "",
+            "timestamp": Timestamp()
+        ] as [String : Any]
+        
+        FirebaseManager.shared.db.collection("users").document(user).collection("posts").document(docID).collection("comments").document().setData(messageData)
+    }
+    
+    func getComments(user: String, docID: String) {
+        if (self.commentsListener != nil) {
+            self.commentsListener?.remove()
+        }
+        self.comments = []
+        self.commentsListener = FirebaseManager.shared.db.collection("users").document(user ?? "").collection("posts").document(docID).collection("comments").order(by: "timestamp").limit(to: 50).addSnapshotListener { querySnapshot, error in
+            
+                guard let snapshot = querySnapshot else {
+                    self.commentsUpdate()
+                    return
+                }
+                snapshot.documentChanges.forEach { diff in
+                    let dat = diff.document.data()
+                    if (diff.type == .added) {
+                        print("ADDED POST")
+                        print(diff.document.data())
+                        self.getUser(id: dat["id"] as? String ?? "", completionHandler: {user in
+                            withAnimation {
+                                self.comments.insert([
+                                    "id": dat["id"] as? String ?? "",
+                                    "message": dat["message"] as? String ?? "",
+                                    "pfp": user?["pfp"] as? String ?? "",
+                                    "display": user?["display"] as? String ?? "",
+                                    "fullname": user?["fullname"] as? String ?? "",
+                                ], at:0)
+                                self.commentsUpdate()
+                            }
+                        })
+                        
+                    }
+                    
+                    if (diff.type == .removed) {
+                        print("REMOVED POST")
+//                        if let index = self.friends.firstIndex(of: diff.document.data()) {
+//                            withAnimation {
+//                                self.feed.remove(at:index)
+//                            }
+//                        }
+                    }
+                    
+                    self.commentsUpdate()
+                    
+                }
+            
+            
+        }
+    }
+    
+    
+    
     func getUser(username: String, completionHandler: @escaping ([String:Any]) -> Void) {
         
         FirebaseManager.shared.db.collection("users").whereField("username", isEqualTo: username.lowercased()).getDocuments() { (querySnapshot, err) in
@@ -406,6 +485,60 @@ class DataHandler: NSObject, ObservableObject {
         }
         
         //        return returnData
+    }
+    
+    func getPost(user: String, docID: String, index: Int = 0, completionHandler: @escaping ([String:Any], Int) -> Void) {
+        if (user == "" || docID == "") {
+            return
+        }
+        FirebaseManager.shared.db.collection("users").document(user).collection("posts").document(docID).getDocument() { (querySnapshot, err) in
+            if ((querySnapshot?.exists) != nil) {
+                completionHandler(querySnapshot?.data() ?? [:], index)
+            }
+        }
+    }
+    
+    func likePost(user: String, docID: String) {
+        if (user == "" || docID == "") {
+            return
+        }
+        let doc = FirebaseManager.shared.db.collection("users").document(user).collection("posts").document(docID)
+            
+            doc.getDocument() { (querySnapshot, err) in
+            if ((querySnapshot?.exists) != nil) {
+                FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID).setData(["liked": true], merge: true)
+                
+                var likedUsers = querySnapshot?.data()?["likedUsers"] as? [String] ?? []
+                var likes = querySnapshot?.data()?["likes"] as? Int ?? 0
+                if (likedUsers.contains(self.uid ?? "")) {
+                    return
+                }
+                likedUsers.append(self.uid ?? "")
+                doc.setData(["likedUsers": likedUsers, "likes": likes + 1], merge: true)
+//                self.feedUpdate()
+            }
+        }
+    }
+    
+    func unlikePost(user: String, docID: String) {
+        if (user == "" || docID == "") {
+            return
+        }
+        let doc = FirebaseManager.shared.db.collection("users").document(user).collection("posts").document(docID)
+            
+            doc.getDocument() { (querySnapshot, err) in
+            if ((querySnapshot?.exists) != nil) {
+                FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID).setData(["liked": false], merge: true)
+                
+                var likedUsers = querySnapshot?.data()?["likedUsers"] as? [String] ?? []
+                var likes = querySnapshot?.data()?["likes"] as? Int ?? 0
+                if (likedUsers.contains(self.uid ?? "")) {
+                    doc.setData(["likedUsers": likedUsers.filter { $0 != (self.uid ?? "") }, "likes": likes - 1], merge: true)
+//                    self.feedUpdate()
+                }
+                
+            }
+        }
     }
     
     func niceString(map: [String:Any]) -> [String:String] {
@@ -563,9 +696,15 @@ class DataHandler: NSObject, ObservableObject {
             return
         }
         
+        
         getUser(username: username, completionHandler: { data in
             
             var shouldStop = false
+            
+            if (self.friendsDict[data["id"] as! String] != nil) {
+                shouldStop = true
+                return
+            }
             
             // if incoming
             let myIncRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("incomingFriends").document(data["id"] as! String)
@@ -671,6 +810,9 @@ class DataHandler: NSObject, ObservableObject {
         
         getUser(username: username, completionHandler: { data in
             
+            print("GOT USER FOR REM")
+            print(data)
+            
             
             // if incoming
             let myIncRef = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("incomingFriends").document(data["id"] as! String)
@@ -686,29 +828,34 @@ class DataHandler: NSObject, ObservableObject {
             let fOutRef = FirebaseManager.shared.db.collection("users").document(data["id"] as! String).collection("outgoingFriends").document(self.uid ?? "")
             
             myFriendRef.getDocument { (document, error) in
-                if let document = document {
-                    if document.exists {
-                        HTTPHandler().POST(url: "/removePostsFromFeed", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
-                            print("FEED IS BEING ADJUSTED")
-                        })
-                        HTTPHandler().POST(url: "/deleteFriend", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
-                            print("SUCCESS REMOVING FRIEND MESSAGES")
-                            
-                        })
-                    }
+                print("DOCUMENT")
+                if (document?.exists == true) {
+                    print("EXISTS")
+                    HTTPHandler().POST(url: "/removePostsFromFeed", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
+                        
+                        print("FEED IS BEING ADJUSTED")
+                    })
+                    HTTPHandler().POST(url: "/deleteFriend", data: ["friendId": data["id"], "myId": self.uid ?? ""], completion: { data in
+                        print("SUCCESS REMOVING FRIEND MESSAGES")
+                        
+                    })
+                    fFriendRef.delete()
+                    myFriendRef.delete()
+                } else {
+                    
+                    myOutRef.delete()
+                    myIncRef.delete()
+                    fOutRef.delete()
+                    fIncRef.delete()
                 }
+                completionHandler()
+                
             }
             
             print("ATTEMPT")
-            fFriendRef.delete()
-            myFriendRef.delete()
-            myOutRef.delete()
-            myIncRef.delete()
-            fOutRef.delete()
             
-            fIncRef.delete()
             
-            completionHandler()
+            
             
         })
         
@@ -847,6 +994,8 @@ class DataHandler: NSObject, ObservableObject {
         self.currentEvent = id
         self.attendingEvent = []
         self.invitingEvent = []
+        
+//        print(self.incomingEvents[id!]?["attending"] )
         
         if (self.events[id!] != nil) {
             self.currentChatName = self.events[id!]?["name"] as! String
@@ -1096,12 +1245,11 @@ class DataHandler: NSObject, ObservableObject {
                 let data = [
                     "img": url?.absoluteString ?? "",
                     "timestamp": time,
-                    "id": self.uid ?? ""
+                    "id": self.uid ?? "",
+                    "docID": docID,
                 ] as [String : Any]
                 
                 docP.setData(data)
-                
-                let docID = docP.documentID
                 
                 let docF = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID)
                 
