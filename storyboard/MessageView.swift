@@ -147,8 +147,8 @@ struct MessageView: View {
                 .background(Color(.init(white:0.10, alpha: 1)))
                 
                 HStack {
-                    Image(systemName: "camera.fill")
-                        .imageScale(.large)
+//                    Image(systemName: "camera.fill")
+//                        .imageScale(.large)
                     
                     
                     ScrollView {
@@ -346,6 +346,9 @@ struct TextBubble: View {
                 Spacer()
             }
             .padding(.horizontal)
+            .onAppear {
+                UITextView.appearance().backgroundColor = .clear
+            }
         }
     }
 }

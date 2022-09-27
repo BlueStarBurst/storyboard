@@ -286,8 +286,21 @@ class DataHandler: NSObject, ObservableObject {
                         print("ADDED INC EVENT")
                         print(diff.document.data())
                         
-                        withAnimation {
+                        var time = Int(((dat["date"] as? Timestamp)?.dateValue()) as! Date - Date())
+                        var timeString = ""
+                        
+                        var sec = abs(time % 60)
+                        var minutes = abs((time / 60) % 60)
+                        var hours = abs((time / 60 / 60) % 60)
+                        var days = abs((time / 60 / 60 / 24) % 24)
+                        
+                        if (time < 0 && days >= 1) {
                             self.incomingEvents[diff.document.documentID] = dat
+                            self.leaveEvent(id: diff.document.documentID)
+                        } else {
+                            withAnimation {
+                                self.incomingEvents[diff.document.documentID] = dat
+                            }
                         }
                     }
                     

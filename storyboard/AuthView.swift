@@ -204,7 +204,7 @@ struct AuthView: View {
                                        )
                         )
                     
-                    TextField("(650)-555-1234", text:$model.phNumber)
+                    TextField("Phone number", text:$model.phNumber)
                         .onChange(of: model.phNumber) { name in
                             if (name == "(") {
                                 model.phNumber = ""
@@ -259,7 +259,7 @@ struct AuthView: View {
                 .padding(.top,10)
                 .padding(.bottom,15)
                 .padding(.horizontal)
-                Text("Standard data rates may apply blah blah blah")
+                Text("Standard sms and data rates may apply!")
                     .fontWeight(.light)
                     .foregroundColor(.gray)
                 Spacer()
