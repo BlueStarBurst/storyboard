@@ -187,7 +187,11 @@ struct FeedView: View {
                                     Text(message ?? "Message")
                                         .padding()
                                         .opacity(message == nil ? 0.5 : 0)
+                                        
                                     TextEditor(text: Binding($message, replacingNilWith: ""))
+                                        if #available(iOS 16.0, *) {
+                                            .scrollContentBackground(.hidden)
+                                        }
                                         .frame(minHeight: 30, alignment: .leading)
                                         .cornerRadius(6.0)
                                         .multilineTextAlignment(.leading)
