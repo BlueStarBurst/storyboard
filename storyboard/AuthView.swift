@@ -262,6 +262,9 @@ struct AuthView: View {
                 Text("Standard sms and data rates may apply!")
                     .fontWeight(.light)
                     .foregroundColor(.gray)
+                Text("By using this app you agree to the [EULA](https://bluestarburst.github.io/storyboard-public/eula/) and [Privacy Policy](https://bluestarburst.github.io/storyboard-public/) found here")
+                    .fontWeight(.light)
+                    .foregroundColor(.gray)
                 Spacer()
                 
             }

@@ -73,6 +73,12 @@ struct UserPage: View {
                 }
                 Spacer()
                 Menu {
+                    Button(action: {DataHandler.shared.removeOutFriend(username: model.dat["username"] as! String, completionHandler: {
+                        print("remove Data")
+                        model.update()
+                    })}) {
+                        Label("Block User", systemImage: "trash.fill")
+                    }
                     Button(role: .destructive, action: {DataHandler.shared.removeOutFriend(username: model.dat["username"] as! String, completionHandler: {
                         print("remove Data")
                         model.update()

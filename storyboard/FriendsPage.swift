@@ -25,6 +25,7 @@ class FriendsPageViewModel: ObservableObject {
     @Published var error: Bool = false
     @Published var errorMsg: String = ""
     @Published var isSearching: Bool = false
+    @Published var isDeleting: Bool = false
     
     @Published var reload: Bool = false
     
@@ -333,6 +334,13 @@ struct FriendsPage: View {
                                 Label("Edit Profile", systemImage: "square.and.pencil")
                             }
                             Button(role: .destructive, action: {
+                                withAnimation {
+                                    model.isDeleting = true
+                                }
+                            }) {
+                                Label("Delete Account", systemImage: "square.and.pencil")
+                            }
+                            Button(role: .destructive, action: {
                                 do {
                                     try Auth.auth().signOut()
                                     exit(-1)
@@ -493,6 +501,69 @@ struct FriendsPage: View {
                     .padding(.bottom,25)
                     .padding(.horizontal)
                 }
+            }
+            
+            if model.isDeleting {
+                VStack {
+                    ZStack {
+                        HStack {
+                            Image(systemName: "chevron.backward").onTapGesture {
+                                withAnimation {
+                                    model.isDeleting = false
+                                }
+                            }
+                            Spacer()
+                        }
+                        
+                        
+                    }.padding()
+                    Spacer()
+                    Text("Are you sure you want to delete your account?")
+                    Button(action: {
+                        withAnimation {
+                            
+                            HTTPHandler().POST(url: "/deleteUser", data: [], completion: { data in
+                                do {
+                                    try Auth.auth().signOut()
+                                    exit(-1)
+                                } catch let signOutError as NSError {
+                                    print("Error signing out: %@", signOutError)
+                                }
+                            })
+
+                        }
+                        
+                    },  label: {
+                        Text("delete account")
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.vertical)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.pink)
+                            .cornerRadius(8)
+                    })
+                    .padding(.top,10)
+                    .padding(.bottom,15)
+                    .padding(.horizontal)
+                    Button(action: {
+                        withAnimation {
+                            model.isDeleting = false
+                        }
+                    },  label: {
+                        Text("cancel")
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.vertical)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.pink)
+                            .cornerRadius(8)
+                    })
+                    .padding(.top,10)
+                    .padding(.bottom,15)
+                    .padding(.horizontal)
+                    Spacer()
+                }
+                .transition(.move(edge: .bottom))
             }
             
             

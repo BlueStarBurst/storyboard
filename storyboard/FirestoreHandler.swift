@@ -350,6 +350,7 @@ class DataHandler: NSObject, ObservableObject {
                     
                     if (diff.type == .removed) {
                         print("REMOVED POST")
+                        self.feed = self.feed.filter { $0["docID"] as? String ?? "1" != dat["docID"] as? String ?? "2" }
 //                        if let index = self.friends.firstIndex(of: diff.document.data()) {
 //                            withAnimation {
 //                                self.feed.remove(at:index)
@@ -431,6 +432,11 @@ class DataHandler: NSObject, ObservableObject {
         ] as [String : Any]
         
         FirebaseManager.shared.db.collection("users").document(user).collection("posts").document(docID).collection("comments").document().setData(messageData)
+        if (user != self.uid) {
+            self.getUser(id: user as? String ?? "", completionHandler: { data in
+                self.sendPush(token: (data?["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title: (((self.currentUser?["fullname"] as? String) ?? "") + " commented on your post!"), body: message)
+            })
+        }
     }
     
     func getComments(user: String, docID: String) {
@@ -528,6 +534,14 @@ class DataHandler: NSObject, ObservableObject {
                 }
                 likedUsers.append(self.uid ?? "")
                 doc.setData(["likedUsers": likedUsers, "likes": likes + 1], merge: true)
+                
+                if (user != self.uid) {
+                    self.getUser(id: user as? String ?? "", completionHandler: { data in
+                        self.sendPush(token: (data?["token"] as? String) ?? "", fromName: (self.currentUser?["fullname"] as? String) ?? "", title:  (((self.currentUser?["fullname"] as? String) ?? "") + " liked your post!"), body: ("Your post has " + String(likes + 1) + " likes"))
+                    })
+                }
+                
+                
 //                self.feedUpdate()
             }
         }
@@ -550,6 +564,61 @@ class DataHandler: NSObject, ObservableObject {
 //                    self.feedUpdate()
                 }
                 
+            }
+        }
+    }
+    
+    func flagPost(user: String, docID: String) {
+        if (user == "" || docID == "") {
+            return
+        }
+        let doc = FirebaseManager.shared.db.collection("users").document(user).collection("posts").document(docID)
+            
+            doc.getDocument() { (querySnapshot, err) in
+            if ((querySnapshot?.exists) != nil) {
+                FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID).setData(["flagged": true], merge: true)
+                
+                var likedUsers = querySnapshot?.data()?["flaggedUsers"] as? [String] ?? []
+                var likes = querySnapshot?.data()?["flags"] as? Int ?? 0
+                if (likedUsers.contains(self.uid ?? "")) {
+                    return
+                }
+                likedUsers.append(self.uid ?? "")
+                doc.setData(["flaggedUsers": likedUsers, "flags": likes + 1], merge: true)
+//                self.feedUpdate()
+            }
+        }
+    }
+    
+    func unflagPost(user: String, docID: String) {
+        if (user == "" || docID == "") {
+            return
+        }
+        let doc = FirebaseManager.shared.db.collection("users").document(user).collection("posts").document(docID)
+            
+            doc.getDocument() { (querySnapshot, err) in
+            if ((querySnapshot?.exists) != nil) {
+                FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID).setData(["flagged": false], merge: true)
+                
+                var likedUsers = querySnapshot?.data()?["flaggedUsers"] as? [String] ?? []
+                var likes = querySnapshot?.data()?["flags"] as? Int ?? 0
+                if (likedUsers.contains(self.uid ?? "")) {
+                    doc.setData(["flaggedUsers": likedUsers.filter { $0 != (self.uid ?? "") }, "flags": likes - 1], merge: true)
+//                    self.feedUpdate()
+                    
+                }
+                
+            }
+        }
+    }
+    
+    func hidePost(user:String, docID: String) {
+        let doc = FirebaseManager.shared.db.collection("users").document(self.uid ?? "").collection("feed").document(docID).delete() { err in
+            if let err = err {
+                print("Error removing document: \(err)")
+            }
+            else {
+                print("Document successfully removed!")
             }
         }
     }

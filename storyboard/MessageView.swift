@@ -147,8 +147,8 @@ struct MessageView: View {
                 .background(Color(.init(white:0.10, alpha: 1)))
                 
                 HStack {
-//                    Image(systemName: "camera.fill")
-//                        .imageScale(.large)
+                    //                    Image(systemName: "camera.fill")
+                    //                        .imageScale(.large)
                     
                     
                     ScrollView {
@@ -161,23 +161,23 @@ struct MessageView: View {
                             Text(message ?? "Message")
                                 .padding()
                                 .opacity(message == nil ? 0.5 : 0)
-                                if #available(iOS 16.0, *) {
-                                    TextEditor(text: Binding($message, replacingNilWith: ""))
-                                        .scrollContentBackground(.hidden)
-                                        .frame(minHeight: 30, alignment: .leading)
-                                        .cornerRadius(6.0)
-                                        .multilineTextAlignment(.leading)
-                                        .padding(9)
-                                        .opacity(1)
-                                            
-                                        } else {
-TextEditor(text: Binding($message, replacingNilWith: ""))
-                                        .frame(minHeight: 30, alignment: .leading)
-                                        .cornerRadius(6.0)
-                                        .multilineTextAlignment(.leading)
-                                        .padding(9)
-                                        .opacity(1)
-                                        }
+//                            if #available(iOS 16.0, *) {
+//                                TextEditor(text: Binding($message, replacingNilWith: ""))
+//                                    .scrollContentBackground(.hidden)
+//                                    .frame(minHeight: 30, alignment: .leading)
+//                                    .cornerRadius(6.0)
+//                                    .multilineTextAlignment(.leading)
+//                                    .padding(9)
+//                                    .opacity(1)
+//
+//                            } else {
+                                TextEditor(text: Binding($message, replacingNilWith: ""))
+                                    .frame(minHeight: 30, alignment: .leading)
+                                    .cornerRadius(6.0)
+                                    .multilineTextAlignment(.leading)
+                                    .padding(9)
+                                    .opacity(1)
+//                            }
                             
                             
                         }

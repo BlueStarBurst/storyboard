@@ -35,6 +35,7 @@ class FeedViewModel: ObservableObject {
                 "id": post["id"] as? String ?? "",
                 "docID": post["docID"] as? String ?? "",
                 "liked": (post["liked"] as? Bool ?? false) ? "true" : "false",
+                "flagged": (post["flagged"] as? Bool ?? false) ? "true" : "false",
                 "index": String(index),
                 "likes": index < self.oldfeed.count ? self.oldfeed[index]["likes"] ?? "0" : "0"
             ])
@@ -47,7 +48,7 @@ class FeedViewModel: ObservableObject {
         self.friendsDict = DataHandler.shared.friendsDict
         //        self.friendsDict[DataHandler.shared.uid ?? ""] = DataHandler.shared.currentUser
         print("FRIENDSDICT")
-//        print(friendsDict)
+        //        print(friendsDict)
     }
     
     func updateComments() {
@@ -113,7 +114,7 @@ struct FeedView: View {
                                 .aspectRatio(contentMode: .fit)
                                 .cornerRadius(12)
                                 .padding([.top], 5)
-                                
+                            
                             let user = model.friendsDict[post["id"] ?? ""] ?? ( (DataHandler.shared.uid == post["id"]) ? DataHandler.shared.currentUser : nil)
                             HStack {
                                 FriendLabel(name: user?["fullname"] as? String ?? "", username: user?["display"] as? String ?? "", id: user?["id"] as? String ?? "", image: user?["pfp"] as? String).onAppear {
@@ -140,6 +141,31 @@ struct FeedView: View {
                                 }, label: {
                                     Image(systemName: "plus.bubble").imageScale(.large)
                                 }).buttonStyle(PlainButtonStyle())
+                                Button(action: {
+                                    if (post["flagged"] == "true") {
+                                        DataHandler.shared.unflagPost(user: post["id"] ?? "", docID: post["docID"] ?? "")
+                                    } else {
+                                        DataHandler.shared.flagPost(user: post["id"] ?? "", docID: post["docID"] ?? "")
+                                    }
+                                }, label: {
+                                    Image(systemName: post["flagged"] == "true" ? "flag.fill" : "flag").imageScale(.large)
+                                        .foregroundColor(post["flagged"] == "true" ? Color.orange : Color.white)
+                                }).buttonStyle(PlainButtonStyle())
+                                Menu {
+                                    Button(role: .destructive, action: {DataHandler.shared.hidePost(user: post["id"] ?? "", docID: post["docID"] ?? "")}) {
+                                        Label("Hide Post", systemImage: "trash.fill")
+                                    }
+                                } label: {
+                                    VStack {
+                                        Spacer()
+                                        Image(systemName: "ellipsis")
+                                        
+                                            .padding(3)
+                                        //                    .imageScale(.large)
+                                            .rotationEffect(Angle(degrees: 90))
+                                        Spacer()
+                                    }
+                                }
                                 
                             }
                             
@@ -187,27 +213,27 @@ struct FeedView: View {
                                     Text(message ?? "Message")
                                         .padding()
                                         .opacity(message == nil ? 0.5 : 0)
-                                        if #available(iOS 16.0, *) {
-                                    TextEditor(text: Binding($message, replacingNilWith: ""))
+//                                    if #available(iOS 16.0, *) {
+//                                        TextEditor(text: Binding($message, replacingNilWith: ""))
+//
+//                                            .scrollContentBackground(.hidden)
+//
+//                                            .frame(minHeight: 30, alignment: .leading)
+//                                            .cornerRadius(6.0)
+//                                            .multilineTextAlignment(.leading)
+//                                            .padding(9)
+//                                            .background(Color.clear)
+//                                            .opacity(1)
+//                                    } else {
+                                        TextEditor(text: Binding($message, replacingNilWith: ""))
                                         
-                                            .scrollContentBackground(.hidden)
-                                        
-                                        .frame(minHeight: 30, alignment: .leading)
-                                        .cornerRadius(6.0)
-                                        .multilineTextAlignment(.leading)
-                                        .padding(9)
-                                        .background(Color.clear)
-                                        .opacity(1)
-                                        } else {
-                                            TextEditor(text: Binding($message, replacingNilWith: ""))
-                                        
-                                        .frame(minHeight: 30, alignment: .leading)
-                                        .cornerRadius(6.0)
-                                        .multilineTextAlignment(.leading)
-                                        .padding(9)
-                                        .background(Color.clear)
-                                        .opacity(1)
-                                        }
+                                            .frame(minHeight: 30, alignment: .leading)
+                                            .cornerRadius(6.0)
+                                            .multilineTextAlignment(.leading)
+                                            .padding(9)
+                                            .background(Color.clear)
+                                            .opacity(1)
+//                                    }
                                     
                                     
                                 }
@@ -260,7 +286,7 @@ struct FeedView: View {
                                             }
                                         Text(comment["fullname"] ?? "").bold() + Text(" " + (comment["message"] ?? ""))
                                         Spacer()
-                                    
+                                        
                                     }
                                 }
                             }
